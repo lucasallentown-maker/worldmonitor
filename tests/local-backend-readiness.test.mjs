@@ -112,16 +112,25 @@ test('FIXTURE cross-source signals require a fresh non-empty seed', () => {
   );
   assert.equal(full.sufficient, true, full.reasons.join('; '));
   delete present['wildfire:fires:v1'];
-  const sparse = assessCrossSourceCoverage(present, NOW);
+  const unrelated = assessCrossSourceCoverage(present, NOW);
+  const stillGenuine = classifySignals(
+    { signals: [signal], evaluatedAt: FRESH, compositeCount: 0 },
+    meta('cross-source-v1', 1),
+    NOW,
+    unrelated,
+  );
+  assert.equal(stillGenuine.sufficient, true, stillGenuine.reasons.join('; '));
+  assert.equal(stillGenuine.summary.coverage.fresh, unrelated.fresh);
+  delete present['weather:alerts:v1'];
+  const missingWeather = assessCrossSourceCoverage(present, NOW);
   const blocked = classifySignals(
     { signals: [signal], evaluatedAt: FRESH, compositeCount: 0 },
     meta('cross-source-v1', 1),
     NOW,
-    sparse,
+    missingWeather,
   );
   assert.equal(blocked.sufficient, false);
-  assert.match(blocked.blocked.join(' '), /sparse cross-source/);
-  assert.match(blocked.blocked.join(' '), /NASA_FIRMS_API_KEY/);
+  assert.match(blocked.blocked.join(' '), /signal source not fresh/);
 
   const empty = classifySignals(
     { signals: [], evaluatedAt: FRESH, compositeCount: 0 },

@@ -12,6 +12,7 @@ export const MAX_NEW_POOL_PAGES = 2;
 export const PAGE_DEADLINE_MS = 60_000;
 export const HTTP_429_PAUSE_MS = 60_000;
 export const MAX_DEX_CALLS_PER_CYCLE = 20;
+export const MAX_GT_DOSSIERS_PER_CYCLE = 3;
 export const MAX_CANDIDATES = 10;
 export const CONTEXT_MAX_BYTES = 1024;
 
@@ -88,7 +89,7 @@ export function planDexEnrich(pools) {
     && (pool.baseMint === pool.contract || pool.quoteMint === pool.contract)
   ));
   matched.sort((a, b) => (b.liquidityUsd || 0) - (a.liquidityUsd || 0));
-  return matched.slice(0, MAX_DEX_CALLS_PER_CYCLE);
+  return matched.slice(0, MAX_GT_DOSSIERS_PER_CYCLE);
 }
 
 export function completeWindows(trades, observation) {
@@ -151,36 +152,61 @@ function priceChangePct(windows) {
   return ((priced.at(-1).price - priced[0].price) / priced[0].price) * 100;
 }
 
-export function tradeMetrics(trades, observation) {
+function documentedCount(value) {
+  if (typeof value === 'number' && Number.isInteger(value) && value >= 0) return value;
+  if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value);
+  return null;
+}
+
+function documentedUsd(value) {
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+// trades_h24 is the Dex-published h24 buy count plus sell count.
+// It is not the length of a trade tape. Missing fields fail closed.
+export function documentedH24TradeCount(transactions) {
+  const buys = documentedCount(transactions?.h24?.buys);
+  const sells = documentedCount(transactions?.h24?.sells);
+  if (buys == null || sells == null) return { ok: false, reason: 'dex-h24-transactions-undocumented' };
+  return { ok: true, trades_h24: buys + sells };
+}
+
+export function tradeMetrics(trades, observation, dex = {}) {
+  const count = documentedH24TradeCount(dex.transactions);
+  if (!count.ok) return count;
+  if (count.trades_h24 < 200) {
+    return { ok: false, reason: 'trades-h24-below-200', trades_h24: count.trades_h24 };
+  }
+  const volumeH6 = documentedUsd(dex.volume?.h6);
+  const volumeH24 = documentedUsd(dex.volume?.h24);
+  if (volumeH6 == null || volumeH24 == null) {
+    return { ok: false, reason: 'dex-volume-undocumented', trades_h24: count.trades_h24 };
+  }
   if (!observation || observation.complete !== true) {
-    return { ok: false, reason: 'trade-coverage-incomplete' };
+    return { ok: false, reason: 'window-coverage-incomplete', trades_h24: count.trades_h24 };
   }
   const built = completeWindows(trades, observation);
-  if (!built.ok) return built;
+  if (!built.ok) return { ...built, trades_h24: count.trades_h24 };
   const h1 = lastConsecutive(built.windows, 12);
-  const h6 = lastConsecutive(built.windows, 72);
-  const h24 = lastConsecutive(built.windows, 288);
-  if (!h1.ok) return h1;
-  if (!h6.ok) return h6;
-  if (!h24.ok) return h24;
+  if (!h1.ok) return { ...h1, trades_h24: count.trades_h24 };
   const buysH1 = sideCount(h1.windows, 'buy');
   const sellsH1 = sideCount(h1.windows, 'sell');
-  if (sellsH1 === 0 && buysH1 >= 20) return { ok: false, reason: 'h1-zero-sells-20-buys' };
-  const volumeH1 = volumeUsd(h1.windows);
-  const volumeH6 = volumeUsd(h6.windows);
-  const volumeH24 = volumeUsd(h24.windows);
-  const price = priceChangePct(h1.windows);
-  const tradesH24 = h24.windows.reduce((sum, window) => sum + window.trades.length, 0);
-  if (volumeH1 == null || volumeH6 == null || volumeH24 == null || price == null) {
-    return { ok: false, reason: 'trade-metric-missing' };
+  if (sellsH1 === 0 && buysH1 >= 20) {
+    return { ok: false, reason: 'h1-zero-sells-20-buys', trades_h24: count.trades_h24 };
   }
-  if (tradesH24 < 200) return { ok: false, reason: 'trades-h24-below-200' };
+  const volumeH1 = volumeUsd(h1.windows);
+  const price = priceChangePct(h1.windows);
+  if (volumeH1 == null || price == null) {
+    return { ok: false, reason: 'trade-metric-missing', trades_h24: count.trades_h24 };
+  }
   return {
     ok: true,
     volume_h1: volumeH1,
     volume_h6: volumeH6,
     volume_h24: volumeH24,
-    trades_h24: tradesH24,
+    trades_h24: count.trades_h24,
     buys_h1: buysH1,
     sells_h1: sellsH1,
     price_change_h1: price,

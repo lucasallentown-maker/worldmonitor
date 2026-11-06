@@ -39,6 +39,12 @@ export function mapPool(row) {
     createdAt: Number.isFinite(createdAt) ? createdAt : null,
     liquidityUsd: Number(attrs.reserve_in_usd),
     volumeH24Usd: Number(attrs.volume_usd?.h24),
+    volumeUsd: {
+      h1: attrs.volume_usd?.h1 ?? null,
+      h6: attrs.volume_usd?.h6 ?? null,
+      h24: attrs.volume_usd?.h24 ?? null,
+    },
+    transactions: attrs.transactions && typeof attrs.transactions === 'object' ? attrs.transactions : null,
     mcap: Number.isFinite(mcap) ? mcap : null,
     fdvIgnored: attrs.fdv_usd ?? null,
   };

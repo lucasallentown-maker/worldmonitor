@@ -64,6 +64,33 @@ const FRED_REQUIREMENTS = [
   ['macro', 'unrate', 'FRED:UNRATE'],
 ];
 
+export function signalSourceKeys() {
+  return {
+    CROSS_SOURCE_SIGNAL_TYPE_THERMAL_SPIKE: ['thermal:escalation:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_GPS_JAMMING: ['intelligence:gpsjam:v2'],
+    CROSS_SOURCE_SIGNAL_TYPE_MILITARY_FLIGHT_SURGE: ['military:surges:stale:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_UNREST_SURGE: ['unrest:events:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_OREF_ALERT_CLUSTER: ['relay:oref:history:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_VIX_SPIKE: ['market:stocks-bootstrap:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_COMMODITY_SHOCK: ['market:commodities-bootstrap:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_CYBER_ESCALATION: ['cyber:threats-bootstrap:v2'],
+    CROSS_SOURCE_SIGNAL_TYPE_SHIPPING_DISRUPTION: ['supply_chain:shipping:v2'],
+    CROSS_SOURCE_SIGNAL_TYPE_SANCTIONS_SURGE: ['sanctions:pressure:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_EARTHQUAKE_SIGNIFICANT: ['seismology:earthquakes:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_RADIATION_ANOMALY: ['radiation:observations:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_INFRASTRUCTURE_OUTAGE: ['infra:outages:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_WILDFIRE_ESCALATION: ['wildfire:fires:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_DISPLACEMENT_SURGE: ['displacement:border-uk:v1', 'displacement:idmc-idu:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_FORECAST_DETERIORATION: ['forecast:predictions:v2'],
+    CROSS_SOURCE_SIGNAL_TYPE_MARKET_STRESS: ['market:stocks-bootstrap:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_WEATHER_EXTREME: ['weather:alerts:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_MEDIA_TONE_DETERIORATION: ['gdelt:intel:tone:military', 'gdelt:intel:tone:nuclear', 'gdelt:intel:tone:maritime'],
+    CROSS_SOURCE_SIGNAL_TYPE_RISK_SCORE_SPIKE: ['risk:scores:sebuf:stale:v14'],
+    CROSS_SOURCE_SIGNAL_TYPE_REGULATORY_ACTION: ['regulatory:actions:v1'],
+    CROSS_SOURCE_SIGNAL_TYPE_PHYSICAL_PREMIUM_REGIME_TRANSITION: ['market:physical-divergence:v1'],
+  };
+}
+
 export function requiredCrossSourceKeys(now = Date.now()) {
   const year = new Date(now).getUTCFullYear();
   return [
@@ -358,15 +385,20 @@ export function classifySignals(body, meta, now, coverage = null) {
     reasons.push(`seed recordCount ${source.recordCount} != signal count ${signals.length}`);
   }
   const blocked = [];
+  const sourceByType = signalSourceKeys();
   if (!coverage || coverage.checked !== true) {
     blocked.push('cross-source coverage was not checked');
-  } else {
-    const required = coverage.required ?? coverage.keys?.length ?? 0;
-    const fresh = coverage.fresh ?? 0;
-    if (fresh < required) {
-      const bad = (coverage.keys || []).filter((row) => row.status !== 'fresh');
-      const shown = bad.slice(0, 8).map((row) => `${row.key}:${row.status}${row.credential ? ` needs ${row.credential}` : ''}`);
-      blocked.push(`sparse cross-source inputs ${fresh}/${required}${shown.length ? ` (${shown.join(', ')})` : ''}`);
+  } else if (signals) {
+    const freshKeys = new Set((coverage.keys || []).filter((row) => row.status === 'fresh').map((row) => row.key));
+    for (const signal of signals) {
+      const needed = sourceByType[signal.type];
+      if (!needed) {
+        blocked.push(`signal source unmapped ${signal.type}`);
+        continue;
+      }
+      if (!needed.some((key) => freshKeys.has(key))) {
+        blocked.push(`signal source not fresh ${signal.type}`);
+      }
     }
   }
   const first = signals?.[0];

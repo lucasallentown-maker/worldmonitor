@@ -29,6 +29,8 @@ function pool(overrides = {}) {
     createdAt: NOW - 30 * 60 * 1000,
     liquidityUsd: 20_000,
     volumeH24Usd: 60_000,
+    volumeUsd: { h1: '1000', h6: '8000', h24: '60000' },
+    transactions: { h24: { buys: 140, sells: 90 } },
     mcap: 100_000,
     fdv: 9_000_000_000,
     ...overrides,

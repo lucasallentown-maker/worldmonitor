@@ -81,7 +81,10 @@ export function scanCycle(input) {
       reject(rejected, pool, benchResult.reason);
       continue;
     }
-    const trades = tradeMetrics(input.trades?.[pool.contract], input.observation?.[pool.contract]);
+    const trades = tradeMetrics(input.trades?.[pool.contract], input.observation?.[pool.contract], {
+      transactions: pool.transactions,
+      volume: pool.volumeUsd,
+    });
     if (!trades.ok) {
       reject(rejected, pool, trades.reason);
       continue;

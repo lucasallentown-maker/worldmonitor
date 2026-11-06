@@ -72,7 +72,7 @@ Exit 0 and `READY 3/3` means one attempt had all three healthy. Anything else ex
 
 Sufficient fear-and-greed needs the HTTP checks plus finite FRED inputs for M2, the Fed balance sheet, SOFR, HY and IG spreads, the funds rate, the 10y-2y curve, and unemployment. A neutral score of 50 with null inputs is blocked, not healthy.
 
-Sufficient cross-source needs all 25 source keys fresh. A short signal list built from 3 keys is HTTP-green and blocked. Missing keys that need a credential are named. This tool does not create those credentials and does not call `api.worldmonitor.app`.
+Sufficient cross-source means every returned signal is fresh and its own source key is fresh. Coverage of the other feeds is reported. It is not a requirement that all 25 keys exist, because the endpoint's job is the signals it actually published, not a full feed inventory. A signal whose source key is missing or stale is blocked. This tool does not create credentials and does not call `api.worldmonitor.app`.
 
 ## Result of the live runs
 
@@ -134,14 +134,43 @@ Paper only. No orders, wallet, FOMO session, or funds.
 
 ```bash
 node tools/desk-scan/run.mjs --out /tmp/desk-scan-paper
-node --test tests/local-backend-readiness.test.mjs tests/desk-scan.test.mjs
+node --test tests/local-backend-readiness.test.mjs tests/desk-scan.test.mjs tests/desk-paper.test.mjs
 ```
 
 The scan on 2026-11-06T06:22:59Z exited 3, chief `NOT_READY`. It requested two GeckoTerminal new-pool pages (both HTTP 200, 40 pools) and rejected every pool because it was younger than 10 minutes. A dex trades read parsed 62 trades and refused to treat that page as complete 24-hour coverage. `getProgramAccounts` on `https://api.mainnet-beta.solana.com` returned 53 Token-2022 accounts for the probed mint and 51 positive unique owners. Freeze authority was null. The raw top owner and top 10 were both over the 5% and 55% limits, and the count is under 100, so the mint is not a candidate. The public RPC did not deny this small account set. If a later mint is denied, `holderCount` stays null. Set `SOLANA_RPC_URL` in `.env.local-backend` to use another endpoint; the log shows only the host.
 
 Process RSS for that scan was about 77 MB. World Monitor's dev stack was about 624 MB in the earlier measurement. Together that is still too large for a 1 GB machine. Keep the 2 GB minimum and 4 GB comfortable recommendation.
 
-VET, SIZE, FILLS, and RISK are not implemented. The desk is not ready.
+## Acceptance matrix
+
+| Piece | State | Evidence |
+|---|---|---|
+| Local Redis, three HTTP endpoints | Tested | `2026-11-06T06:05:20Z` HTTP-green sample in `scripts/local-backend/live-proof.json` |
+| Sufficiency, not just HTTP 200 | Tested | Rerun `2026-11-06T06:24:13Z`: HTTP-green 3/3, sufficient 1/3. Crypto passed. Fear-and-greed blocked on eight FRED series. Cross-source is sufficient only when every returned signal's own source key is fresh. The other feeds are reported and are not a 25-key pass requirement. |
+| GeckoTerminal discovery and dex read | Tested live, paper | `tools/desk-scan/live-proof.json`. 40 pools, all under 10 minutes old. 62 trades parsed and not treated as a full tape. |
+| Solana holder read | Tested live for one small mint | 51 positive owners, freeze authority null, concentration over the raw limits. Public RPC did not deny that call. |
+| 24h trade count from Dex `transactions.h24` | Tested fixture | `tests/desk-paper.test.mjs`. A long tape without the Dex field fails. |
+| Holder history, two complete snapshots, 10 minutes | Tested fixture | Incomplete snapshots are refused. |
+| VET | Tested fixture | Unknown authority, a set freeze authority, stale cycle, under 100 holders, and a social claim all fail. Social stays unavailable. No social endpoint is called. |
+| SIZE | Tested fixture | Free cash only. Locked capital is returned unchanged. Missing slippage fails. Kelly without probability and payoff sizes 0. |
+| Paper ledger | Tested fixture | Open is idempotent. Close does not delete until the journal has `confirmed: true`. Recovery rebuilds from the journal. No P&L field is filled. |
+| RISK | Tested fixture | Malformed volume is not zero. Clocks fire at 5 minutes and 30 seconds. Fee floor above the configured max fails. Entry and exit interfaces do not submit. |
+| CHIEF | Tested fixture | Two failures in an hour stop new entries. `humanWatch` is false. |
+| Live orders, wallet, FOMO, funds | Blocked | Not implemented. |
+| FRED key | Blocked | Instructions below. No account or key was created. |
+| Whole desk | Not ready | VET through chief are paper fixtures. They are not a live trading system. |
+
+## FRED API key, read from St. Louis Fed docs
+
+Checked read-only on 2026-11-06. No account was created and no key was requested.
+
+1. Read https://fred.stlouisfed.org/docs/api/api_key.html. It says a key cannot be requested or viewed until you are logged into a `fredaccount.stlouisfed.org` user account. Version 1 sends the key as the `api_key` query parameter. The documented shape is a 32-character lowercase alphanumeric string. The example key on that page is a demonstration only.
+2. Register or sign in at https://fredaccount.stlouisfed.org/login/secure. The register help page is https://fred.stlouisfed.org/help/account/fred-account-features/register/. It says the form asks for an email and a password and the account is activated on submit.
+3. After login, open API Keys from the account menu. https://fredaccount.stlouisfed.org/apikeys redirects unsigned visitors to the login page, so that is the key page behind the account.
+4. Version 2 is documented separately at https://fred.stlouisfed.org/docs/api/fred/v2/api_key.html and uses `Authorization: Bearer` instead of the query parameter.
+5. Put the key you receive in gitignored `.env.local-backend` as `FRED_API_KEY`. Do not commit it. Fear-and-greed stays insufficient until the FRED seeder has written the eight series and readiness shows those inputs as finite numbers.
+
+VET, SIZE, paper fills, and paper risk are fixture-tested and are not live execution. The desk is not ready.
 
 Committed evidence:
 

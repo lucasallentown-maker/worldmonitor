@@ -11,8 +11,8 @@ This directory is a separable paper filter. It does not place orders, move funds
 - New-pool input is refused above 2 pages or past a 60 second page budget.
 - The shared limiter allows 5 calls per minute. Scan may use 4. One slot stays reserved. A VET caller is rejected with `vet-not-implemented`. HTTP 429 pauses the limiter for 60 seconds.
 - Cheap filters, before any enrich call: age 10 minutes through 48 hours, liquidity at least $15,000, 24h volume at least $50,000, market cap from $80,000 through $6,000,000. Market cap must be the actual `mcap` field. FDV is never a substitute.
-- Dex enrich keeps at most 20 Solana pools per cycle, highest liquidity first, and only when the pool mint matches the contract.
-- Trade stats use consecutive observed 5-minute windows with complete timestamp coverage. H1, H6, and H24 are sums of 12, 72, and 288 of those windows. Overlapping ranges are not subtracted from each other. Fewer than 200 trades in the H24 windows fails. An H1 window set with zero sells and 20 or more buys is rejected.
+- Dex dossiers are at most 3 per cycle, highest liquidity first, Solana mint match only, and they share the GeckoTerminal budget.
+- `trades_h24` is the documented Dex `transactions.h24` buy count plus sell count. A missing count fails. It is not the length of a trade tape. H1 buy, sell, and price still need 12 consecutive complete 5-minute windows. An H1 window with zero sells and 20 or more buys is rejected.
 - Holders are unique owners with a positive balance. SPL and Token-2022 accounts for the same owner are added together. Zero balances are ignored. A negative amount, a missing owner, incomplete `getProgramAccounts` pagination, or a provider limit fails closed.
 - Freeze authority must be JSON `null`, and the unique-owner count must be at least 100.
 - Holder growth uses two or more real snapshots at least 10 minutes apart. Nothing is interpolated.

@@ -1,0 +1,68 @@
+export function kellyFraction(edge) {
+  if (!edge || !Number.isFinite(edge.probability) || !Number.isFinite(edge.payoff)) {
+    return { ok: true, fraction: 0, reason: 'kelly-undocumented' };
+  }
+  if (edge.probability < 0 || edge.probability > 1 || edge.payoff <= 0) {
+    return { ok: false, reason: 'kelly-malformed', fraction: null };
+  }
+  const fraction = edge.probability - ((1 - edge.probability) / edge.payoff);
+  return { ok: true, fraction: Math.max(0, fraction), reason: null };
+}
+
+function configReady(config) {
+  if (!config || config.retest !== true) return 'retest-unconfigured';
+  if (!Number.isFinite(config.feeBps) || config.feeBps < 0) return 'fee-unconfigured';
+  if (!Number.isFinite(config.slippageBps) || config.slippageBps < 0) return 'slippage-unconfigured';
+  if (!Number.isFinite(config.costReserveRate) || config.costReserveRate < 0) return 'cost-reserve-unconfigured';
+  if (!Number.isFinite(config.maxFeeRate) || config.maxFeeRate <= 0) return 'fee-max-unconfigured';
+  return null;
+}
+
+export function sizePaper(input) {
+  const configError = configReady(input?.config);
+  if (configError) return { ok: false, reason: configError, notional: null, lockedCapital: input?.lockedCapital };
+  if (!Number.isFinite(input.freeCash) || input.freeCash < 0) {
+    return { ok: false, reason: 'free-cash-invalid', notional: null };
+  }
+  if (!Number.isFinite(input.lockedCapital) || input.lockedCapital < 0) {
+    return { ok: false, reason: 'locked-capital-invalid', notional: null };
+  }
+  if (!Number.isFinite(input.realizedProfit)) {
+    return { ok: false, reason: 'realized-profit-undocumented', notional: null, lockedCapital: input.lockedCapital };
+  }
+  if (!Number.isFinite(input.liquidityUsd) || input.liquidityUsd < 0) {
+    return { ok: false, reason: 'liquidity-invalid', notional: null, lockedCapital: input.lockedCapital };
+  }
+  const kelly = kellyFraction(input.kelly);
+  if (!kelly.ok) {
+    return { ok: false, reason: kelly.reason, notional: null, lockedCapital: input.lockedCapital };
+  }
+  const dollars = input.freeCash;
+  const floor = Math.max(0.0045 * dollars, 0.95) / (dollars || NaN);
+  if (!Number.isFinite(floor)) return { ok: false, reason: 'fee-dollars-invalid', notional: null, lockedCapital: input.lockedCapital };
+  if (floor > input.config.maxFeeRate) {
+    return { ok: false, reason: 'fee-floor-above-configured-max', floor, notional: null, lockedCapital: input.lockedCapital };
+  }
+  const reserve = input.realizedProfit > 0 ? input.realizedProfit * input.config.costReserveRate : 0;
+  const spendable = Math.max(0, input.freeCash - reserve);
+  const ceiling = spendable * 0.06;
+  const liqCap = input.liquidityUsd * 0.02;
+  const cap = Math.min(ceiling, liqCap);
+  let notional = spendable * kelly.fraction;
+  let partial = false;
+  if (notional > cap) {
+    notional = cap * 0.5;
+    partial = true;
+  }
+  return {
+    ok: true,
+    reason: kelly.fraction === 0 ? 'kelly-undocumented' : null,
+    notional,
+    partial,
+    lockedCapital: input.lockedCapital,
+    lockedCapitalUnchanged: true,
+    reserveFromRealizedProfit: reserve,
+    paper: true,
+    liveOrder: false,
+  };
+}
