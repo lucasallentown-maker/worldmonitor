@@ -1,0 +1,885 @@
+{
+  "fixture": true,
+  "label": "FIXTURE — not live market data",
+  "now": 1793966400000,
+  "intentId": "paper-1",
+  "entryPaperPrice": 1.2,
+  "exitPaperPrice": 1.1,
+  "scan": {
+    "now": 1793966400000,
+    "source": "fixture",
+    "wmSufficient": 3,
+    "pages": [
+      [
+        {
+          "ticker": "FIXTURE",
+          "contract": "So11111111111111111111111111111111111111112",
+          "chain": "solana",
+          "baseMint": "So11111111111111111111111111111111111111112",
+          "quoteMint": "Quote1111111111111111111111111111111111111",
+          "createdAt": 1793962800000,
+          "liquidityUsd": 80000,
+          "volumeH24Usd": 60000,
+          "volumeUsd": {
+            "h6": 8000,
+            "h24": 60000
+          },
+          "transactions": {
+            "h24": {
+              "buys": 140,
+              "sells": 90
+            }
+          },
+          "mcap": 200000
+        }
+      ]
+    ],
+    "elapsedMs": 1000,
+    "bench": {
+      "So11111111111111111111111111111111111111112": {
+        "since": 1793964840000
+      }
+    },
+    "trades": {
+      "So11111111111111111111111111111111111111112": [
+        {
+          "timestamp": 1000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 2000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 301000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 302000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 601000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 602000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 901000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 902000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 1201000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 1202000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 1501000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 1502000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 1801000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 1802000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 2101000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 2102000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 2401000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 2402000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 2701000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 2702000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 3001000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 3002000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        },
+        {
+          "timestamp": 3301000,
+          "side": "buy",
+          "usd": 10,
+          "price": 1
+        },
+        {
+          "timestamp": 3302000,
+          "side": "sell",
+          "usd": 9,
+          "price": 1.01
+        }
+      ]
+    },
+    "observation": {
+      "So11111111111111111111111111111111111111112": {
+        "start": 0,
+        "end": 3600000,
+        "complete": true
+      }
+    },
+    "accounts": {
+      "So11111111111111111111111111111111111111112": [
+        {
+          "owner": "o0",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o1",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o2",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o3",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o4",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o5",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o6",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o7",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o8",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o9",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o10",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o11",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o12",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o13",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o14",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o15",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o16",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o17",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o18",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o19",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o20",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o21",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o22",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o23",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o24",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o25",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o26",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o27",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o28",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o29",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o30",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o31",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o32",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o33",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o34",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o35",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o36",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o37",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o38",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o39",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o40",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o41",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o42",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o43",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o44",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o45",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o46",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o47",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o48",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o49",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o50",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o51",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o52",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o53",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o54",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o55",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o56",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o57",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o58",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o59",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o60",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o61",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o62",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o63",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o64",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o65",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o66",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o67",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o68",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o69",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o70",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o71",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o72",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o73",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o74",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o75",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o76",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o77",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o78",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o79",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o80",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o81",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o82",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o83",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o84",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o85",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o86",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o87",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o88",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o89",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o90",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o91",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o92",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o93",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o94",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o95",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o96",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o97",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o98",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o99",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o100",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o101",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o102",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o103",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o104",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o105",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o106",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o107",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o108",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o109",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o110",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o111",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o112",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o113",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o114",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o115",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o116",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o117",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o118",
+          "amount": 10,
+          "program": "spl"
+        },
+        {
+          "owner": "o119",
+          "amount": 10,
+          "program": "spl"
+        }
+      ]
+    },
+    "pagination": {
+      "So11111111111111111111111111111111111111112": {
+        "complete": true
+      }
+    },
+    "mints": {
+      "So11111111111111111111111111111111111111112": {
+        "freezeAuthority": null
+      }
+    },
+    "snapshots": {
+      "So11111111111111111111111111111111111111112": [
+        {
+          "at": 1793965800000,
+          "holders": 110
+        },
+        {
+          "at": 1793966400000,
+          "holders": 120
+        }
+      ]
+    },
+    "worldNews": {
+      "kind": "world-news",
+      "text": "FIXTURE shipping note"
+    }
+  },
+  "vet": {
+    "cycleFinishedAt": 1793966340000,
+    "mintAuthority": null,
+    "freezeAuthority": null,
+    "authorityAt": 1793966340000,
+    "holders": {
+      "complete": true,
+      "count": 120,
+      "at": 1793966340000,
+      "top1": 0.04,
+      "top10": 0.4
+    },
+    "liquidityUsd": 50000,
+    "liquidityAt": 1793966340000,
+    "feesDocumented": true,
+    "feesAt": 1793966340000,
+    "price": 1.2,
+    "pricedAt": 1793966340000,
+    "story": {
+      "text": "FIXTURE world note",
+      "at": 1793966340000
+    }
+  },
+  "size": {
+    "freeCash": 5000,
+    "lockedCapital": 1000,
+    "bank": 20000,
+    "realizedProfit": 50,
+    "liquidityUsd": 80000,
+    "kelly": {
+      "probability": 0.55,
+      "payoff": 1.5
+    },
+    "config": {
+      "retest": true,
+      "feeBps": 30,
+      "slippageBps": 50,
+      "maxFeeRate": 0.05
+    }
+  },
+  "risk": {
+    "config": {
+      "volumeRatioMax": 0.2,
+      "liquidityKeep": 0.6,
+      "hardStop": 0.65,
+      "checkMs": 300000,
+      "closePollMs": 30000
+    },
+    "volumeH6": 8000,
+    "volumeH24": 60000,
+    "entryLiquidity": 80000,
+    "liquidityUsd": 70000,
+    "entryPaperPrice": 1.2,
+    "paperPrice": 1.1
+  },
+  "failures": []
+}

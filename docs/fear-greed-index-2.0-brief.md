@@ -259,8 +259,8 @@ score = weighted combination with mean reversion
 | VIX Term Structure | ^VIX, ^VIX9D, ^VIX3M | `VIX/VIX3M` ratio (&lt;1 = contango) | Volatility |
 | Sector RSI (14d) | all 11 GICS sector ETFs: XLK, XLF, XLE, XLV, XLY, XLP, XLI, XLB, XLU, XLRE, XLC | Standard RSI formula | Momentum |
 | Cross-asset 30d returns | GLD, TLT, SPY, DXY | `rateOfChange(prices, 30)` | Cross-Asset |
-| M2 YoY change | M2SL | `(latest - 52wk_ago) / 52wk_ago` | Liquidity |
-| Fed BS MoM change | WALCL | `(latest - 4wk_ago) / 4wk_ago` | Liquidity |
+| M2 YoY change | M2SL | same calendar date one year earlier; a missing anniversary is null, not a neighbor month | Liquidity |
+| Fed balance-sheet step | WALCL | four observation steps (about four weeks when the series is weekly); not a calendar month | Liquidity |
 | HY spread trend | BAMLH0A0HYM2 | `20 trading-day change direction` | Credit |
 | RSP/SPY ratio | RSP, SPY | `RSP_return_30d - SPY_return_30d` | Breadth |
 
@@ -343,7 +343,7 @@ not treat it as a live key.
     "trend": { "score": 52, "weight": 0.10, "contribution": 5.2, "inputs": { "spxPrice": 5667, "sma20": 5580, "sma50": 5520, "sma200": 5200, "aboveMaCount": 3 } },
     "breadth": { "score": 40, "weight": 0.10, "contribution": 4.0, "inputs": { "pctAbove200d": 43.93, "rspSpyRatio": -2.1, "advDecRatio": null } },
     "momentum": { "score": 13, "weight": 0.10, "contribution": 1.3, "inputs": { "spxRoc20d": -3.2, "sectorRsiAvg": 38 } },
-    "liquidity": { "score": 26, "weight": 0.15, "contribution": 3.9, "inputs": { "m2Yoy": 1.2, "fedBsMom": -0.8, "sofr": 5.31 } },
+    "liquidity": { "score": 26, "weight": 0.15, "contribution": 3.9, "inputs": { "m2Yoy": 1.2, "m2LatestDate": "2026-09-01", "m2PriorDate": "2025-09-01", "m2Window": "calendar-year", "fedBsMom": -0.8, "walclLatestDate": "2026-11-04", "walclPriorDate": "2026-10-07", "walclWindow": "4-observation-step", "sofr": 5.31 } },
     "credit": { "score": 68, "weight": 0.10, "contribution": 6.8, "inputs": { "hySpread": 3.27, "igSpread": 1.15, "hyTrend30d": "narrowing" } },
     "macro": { "score": 44, "weight": 0.05, "contribution": 2.2, "inputs": { "fedRate": 3.625, "t10y2y": 0.15, "unrate": 4.1 } },
     "crossAsset": { "score": 72, "weight": 0.05, "contribution": 3.6, "inputs": { "goldReturn30d": 4.2, "tltReturn30d": 1.8, "spyReturn30d": -2.1, "dxyChange30d": -1.5 } }

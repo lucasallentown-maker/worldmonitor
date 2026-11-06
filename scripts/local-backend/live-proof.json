@@ -89,6 +89,34 @@
     "crypto": { "sufficient": true, "provider": "seed", "quoteCount": 10 },
     "signals": { "sufficient": true, "signalCount": 5, "sourceKeysFresh": "3/25 reported, not a 25-key requirement" }
   },
+  "m2CalendarYearReadiness": {
+    "checkedAt": "2026-11-06T07:05:42.903Z",
+    "result": "SUFFICIENT 3/3",
+    "label": "real imported FRED history after the calendar-year M2 correction. Not a cloud key fetch and not a scheduled refresh.",
+    "fearGreed": {
+      "compositeScore": 48.5,
+      "compositeLabel": "Neutral",
+      "seededAt": "2026-11-06T07:05:15.096Z",
+      "vix": 28.18,
+      "m2Window": "calendar-year",
+      "m2LatestDate": "2026-09-01",
+      "m2LatestValue": 23413.9,
+      "m2PriorDate": "2025-09-01",
+      "m2PriorValue": 22149.2,
+      "m2Yoy": 5.709912773373308,
+      "walclWindow": "4-observation-step",
+      "walclLatestDate": "2026-11-04",
+      "walclLatestValue": 6748145,
+      "walclPriorDate": "2026-10-07",
+      "walclPriorValue": 6747560,
+      "fedBsMom": 0.008669800639045818,
+      "sofr": 3.94
+    },
+    "readOnlyScan": "40 pools, 0 candidates, holderCount 323, mint and freeze verified null, chief NOT_READY",
+    "paperFixtureCli": "PAPER FIXTURE PASS, second close did not delete, humanWatch false",
+    "deskReady": false,
+    "liveTrading": "disabled"
+  },
   "fearGreed": {
     "http": 200,
     "compositeScore": 44.7,

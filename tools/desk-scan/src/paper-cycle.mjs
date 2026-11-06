@@ -39,6 +39,13 @@ export function runPaperFixture(input) {
     confirmed: true,
     provenance: 'paper-fixture',
   });
+  const secondClose = paperClose(closed.ledger, {
+    id: input.intentId,
+    at: input.now + 3,
+    paperPrice: input.exitPaperPrice,
+    confirmed: true,
+    provenance: 'paper-fixture',
+  });
   const recovered = recoverLedger(closed.ledger.events);
   const chief = supervise({
     now: input.now,
@@ -59,6 +66,7 @@ export function runPaperFixture(input) {
     exit,
     requested,
     closed,
+    secondClose,
     recovered,
     chief,
     ledger: closed.ledger,

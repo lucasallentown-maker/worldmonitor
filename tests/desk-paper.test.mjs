@@ -223,6 +223,8 @@ test('FIXTURE paper path runs from a passing scan through a confirmed close', ()
   assert.equal(result.replay.idempotent, true);
   assert.equal(result.requested.deleted, false);
   assert.equal(result.closed.deleted, true);
+  assert.equal(result.secondClose.deleted, false);
+  assert.equal(result.secondClose.reason, 'position-missing');
   assert.equal(result.recovered.positions['paper-1'], undefined);
   assert.equal(result.entry.submitted, false);
   assert.equal(result.chief.humanWatch, false);

@@ -6,6 +6,7 @@ import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runPaperScan } from './src/live.mjs';
+import { runPaperFixture } from './src/paper-cycle.mjs';
 import { atomicWriteJson, withLock } from './src/persist.mjs';
 import { scanCycle } from './src/scan.mjs';
 
@@ -20,9 +21,36 @@ function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
 }
 
-const fixturePath = arg('--fixture');
 const outDir = arg('--out') || path.join(HERE, 'state');
 mkdirSync(outDir, { recursive: true });
+
+const paperFixturePath = arg('--paper-fixture');
+if (paperFixturePath) {
+  const paperFixture = readJson(paperFixturePath);
+  if (paperFixture.fixture !== true || paperFixture.label !== 'FIXTURE — not live market data') {
+    console.error('refusing paper fixture that is not explicitly labeled');
+    process.exit(2);
+  }
+  const result = runPaperFixture(paperFixture);
+  const output = {
+    schema: 'paper-accept/v1',
+    live: false,
+    fixture: true,
+    fixtureLabel: paperFixture.label,
+    ok: result.ok === true && result.secondClose?.deleted === false && result.secondClose?.reason === 'position-missing',
+    stage: result.stage,
+    idempotent: result.replay?.idempotent === true,
+    closeDeleted: result.closed?.deleted === true,
+    secondCloseDeleted: result.secondClose?.deleted === true,
+    humanWatch: result.chief?.humanWatch === true,
+    liveOrder: false,
+  };
+  atomicWriteJson(path.join(outDir, 'paper-accept.json'), output);
+  console.log(output.ok ? 'PAPER FIXTURE PASS' : `PAPER FIXTURE FAIL stage=${result.stage}`);
+  process.exit(output.ok ? 0 : 1);
+}
+
+const fixturePath = arg('--fixture');
 
 function recordedSufficient() {
   try {

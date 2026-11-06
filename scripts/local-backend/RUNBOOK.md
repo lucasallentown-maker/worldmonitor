@@ -102,7 +102,47 @@ FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scri
 node scripts/local-backend/down.mjs
 ```
 
-That run reached attempt 1 at `2026-11-06T07:00:32Z` with **SUFFICIENT 3/3**. Fear-and-greed was HTTP 200, composite **49.1 Neutral**, VIX 28.18, seeded `2026-11-06T07:00:04.254Z`, no degraded category. M2 52 observations back is the real 2022-05-01 print 21700.2 against 2026-09-01 23413.9 (`m2Yoy` 7.897162238136057). That series is monthly, so this is 52 observations, not a made-up weekly year. WALCL 4 observations back is 2026-10-07 6747560 against 2026-11-04 6748145 (`fedBsMom` 0.008669800639045818). SOFR 3.94, HY 3.32, IG 0.91, fed funds 3.88, 10y-2y 0.38, unemployment 4.2. HY trend was widening. Crypto stayed sufficient with 10 seed quotes. Cross-source stayed sufficient with 5 signals whose own sources were fresh; 3 of 25 keys were fresh and that count is still reported. This does not prove a cloud key fetch or a scheduled refresh.
+The first history import used a 52-row M2 step. On this monthly series that row is 2022-05-01, which is not one year. The seeder now compares the latest print with the observation dated exactly one calendar year earlier. A missing anniversary is left null. WALCL stays four observation steps, which is about four weeks when the prints are weekly, and is not a calendar month.
+
+Re-seeded with the same history file, readiness attempt 1 at `2026-11-06T07:05:42Z` was **SUFFICIENT 3/3**. Fear-and-greed was HTTP 200, composite **48.5 Neutral**, VIX 28.18, seeded `2026-11-06T07:05:15.096Z`, no degraded category. M2 calendar year is **2026-09-01** **23413.9** versus **2025-09-01** **22149.2** (`m2Yoy` **5.709912773373308**, window `calendar-year`). WALCL four-step is **2026-11-04** **6748145** versus **2026-10-07** **6747560** (`fedBsMom` **0.008669800639045818**, window `4-observation-step`). SOFR 3.94. Crypto and cross-source stayed sufficient. This is imported data. It does not prove a cloud key fetch or a scheduled refresh.
+
+## Acceptance audit, 2026-11-06
+
+Read-only observation is safe to run with the commands below. The paper pipeline runs and fail-closes, and it is not ready to size a position. Live trading is disabled.
+
+| Check | Status | Evidence |
+|---|---|---|
+| Install and start | PASS | `npm install`, Redis install, and `FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scripts/local-backend/up.mjs` reached SUFFICIENT 3/3 |
+| Three endpoint sufficiency | PASS | Attempt 1 at `2026-11-06T07:05:42Z`. Not a claim that the desk is ready |
+| M2 calendar year and WALCL 4-step | PASS | Dates and values above. Tests cover missing months, order, short history, and future dates |
+| Read-only public scan | PASS | `node tools/desk-scan/run.mjs --out /tmp/desk-scan-audit` read 40 GeckoTerminal pools, 0 candidates, holder count 323 with mint and freeze both verified null. Chief `NOT_READY`. No order |
+| Paper CLI path | PASS as a labeled fixture | `node tools/desk-scan/run.mjs --paper-fixture tools/desk-scan/fixtures/paper-cycle.json --out /tmp/paper-accept` printed `PAPER FIXTURE PASS`. Idempotent open, close deleted once, second close did not delete, `humanWatch` false, `liveOrder` false |
+| Timers, bench lock, 429 budget, holder history, authority | PASS | `node --test` on the window, readiness, desk-scan, paper, and Fear and Greed doc tests. Clocks are injected. The 429 pause and bench lock tests passed |
+| Fee and Kelly units | BLOCKED | `feeBps` and `slippageBps` are required and unused as a haircut. `maxFeeRate` is a fraction compared with `max(0.0045 * dollars, 0.95) / dollars`. Kelly probability and payoff are not guessed |
+| Paper position sizing | BLOCKED | No empirical paper history, so Kelly stays unset and size is 0 |
+| Social data | BLOCKED | No source. A claim that social data exists is rejected |
+| Scheduled FRED refresh | BLOCKED | Import only. Host key was not fetched here |
+| Live orders, wallet, FOMO, funds | BLOCKED | Not implemented |
+| Process kill during a paper close | UNTESTED | Recovery from a saved journal is tested. A kill in the middle of a write was not performed |
+| Whole desk | BLOCKED | Not ready |
+
+Minimum choices before a sized paper entry, with no defaults:
+
+- `feeBps`, `slippageBps`, and `maxFeeRate` as a fraction
+- `retest` set to true only if you want that requirement
+- `lockedCapital`, `bank`, and `realizedProfit` (use 0 only if that is the real balance)
+- Kelly `probability` and `payoff` only after paper history exists. Do not invent them. Until then, size stays 0
+
+Read-only commands:
+
+```bash
+FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scripts/local-backend/up.mjs
+node scripts/local-backend/readiness.mjs
+node tools/desk-scan/run.mjs --out /tmp/desk-scan-audit
+node tools/desk-scan/run.mjs --paper-fixture tools/desk-scan/fixtures/paper-cycle.json --out /tmp/paper-accept
+node --test tests/fred-calendar-windows.test.mjs tests/fear-greed-doc-parity.test.mjs tests/local-backend-readiness.test.mjs tests/desk-scan.test.mjs tests/desk-paper.test.mjs
+node scripts/local-backend/down.mjs
+```
 
 Payload sample from the preserved 06:05 HTTP-green run:
 
