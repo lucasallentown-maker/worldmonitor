@@ -8,6 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { runPaperScan } from './src/live.mjs';
 import { runPaperFixture } from './src/paper-cycle.mjs';
 import { planExecutablePaper } from './src/executable.mjs';
+import { configGuide } from './src/config.mjs';
+import { loadObservation, observeCandidates, persistObservation, rowsFromScan } from './src/observe.mjs';
+import { loadTimerState, timerHealth } from './src/timer-state.mjs';
 import { atomicWriteJson, withLock } from './src/persist.mjs';
 import { scanCycle } from './src/scan.mjs';
 
@@ -51,6 +54,36 @@ if (paperFixturePath) {
   process.exit(output.ok ? 0 : 1);
 }
 
+if (process.argv.includes('--config-guide')) {
+  console.log(configGuide());
+  process.exit(0);
+}
+
+const observeFixturePath = arg('--observe-fixture');
+if (observeFixturePath) {
+  const observedFixture = readJson(observeFixturePath);
+  if (observedFixture.fixture !== true || observedFixture.label !== 'FIXTURE — not live market data') {
+    console.error('refusing observation fixture that is not explicitly labeled');
+    process.exit(2);
+  }
+  const observed = observeCandidates(loadObservation(outDir), {
+    now: observedFixture.now,
+    rows: observedFixture.rows,
+    source: 'fixture',
+  });
+  await persistObservation(outDir, observed.state);
+  const recordCount = Object.keys(observed.state.records).length;
+  console.log(`OBSERVE FIXTURE records=${recordCount} sized=${observed.state.sizedPositions} orders=${observed.state.liveOrder}`);
+  process.exit(observed.ok && observed.state.sizedPositions === false ? 0 : 1);
+}
+
+if (process.argv.includes('--timer-health')) {
+  const loaded = loadTimerState(outDir);
+  const health = timerHealth(loaded.ok === false ? null : loaded, Date.now());
+  console.log(JSON.stringify({ ok: health.ok, reason: health.reason, liveOrder: false, timers: health.timers }));
+  process.exit(health.ok ? 0 : 1);
+}
+
 const paperConfigPath = arg('--paper-config');
 if (paperConfigPath) {
   const plan = planExecutablePaper(readJson(paperConfigPath), {});
@@ -86,6 +119,15 @@ if (!fixturePath) {
   }
   if (env.SOLANA_RPC_URL && !process.env.SOLANA_RPC_URL) process.env.SOLANA_RPC_URL = env.SOLANA_RPC_URL;
   const report = await runPaperScan({ stateDir: outDir, wmSufficient });
+  if (process.argv.includes('--observe')) {
+    const observed = observeCandidates(loadObservation(outDir), {
+      now: Date.now(),
+      rows: rowsFromScan(report),
+      source: 'live-scan',
+    });
+    await persistObservation(outDir, observed.state);
+    console.log(`OBSERVE live records=${Object.keys(observed.state.records).length} sized=false`);
+  }
   const line = report.stopped
     ? 'stopped because position.json is present'
     : `discovery=${report.discovery?.ok ? report.discovery.pools : report.discovery?.reason} candidates=${report.candidates.length} holder=${report.holderProbe?.ok ? 'ok' : report.holderProbe?.reason || 'not-run'}`;

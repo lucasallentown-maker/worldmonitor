@@ -1,3 +1,5 @@
+import { ingestSocialEvidence } from './social-evidence.mjs';
+
 export const VET_WINDOWS_MS = Object.freeze({
   authority: 7 * 24 * 60 * 60 * 1000,
   topOwner: 7 * 24 * 60 * 60 * 1000,
@@ -10,9 +12,12 @@ export const VET_WINDOWS_MS = Object.freeze({
 
 export const SOCIAL = Object.freeze({
   available: false,
-  status: 'BLOCKED',
-  reason: 'social-connector-unavailable',
+  status: 'AWAIT_INPUT',
+  reason: 'evidence-not-supplied',
+  verified: false,
   verifiedReads: null,
+  awaitInput: true,
+  connector: null,
   endpoint: null,
 });
 
@@ -72,16 +77,15 @@ export function vetDossier(input, now) {
   const handle = typeof input.socialHandle === 'string' ? input.socialHandle.trim() : '';
   const claimed = input.social && (
     input.social.available === true
+    || input.social.verified === true
     || Number.isFinite(input.social.verifiedReads)
     || input.social.status === 'PASS'
     || input.social.status === 'PASS_PARTIAL'
   );
-  if (claimed) reasons.push('social-claim-rejected');
   const social = claimed
-    ? { ...SOCIAL, status: 'REJECTED', reason: 'social-claim-rejected' }
-    : (handle
-      ? { ...SOCIAL, handlePresent: true }
-      : { available: false, status: 'PASS_PARTIAL', reason: 'no-handle', verifiedReads: null, endpoint: null, connector: 'blocked' });
+    ? { available: false, status: 'REJECTED', reason: 'social-claim-rejected', verified: false, verifiedReads: null, awaitInput: false, connector: null, endpoint: null }
+    : ingestSocialEvidence({ handle, evidence: input.socialEvidence ?? null, now });
+  if (claimed || social.failClosed) reasons.push(social.reason);
 
   return {
     ok: reasons.length === 0,

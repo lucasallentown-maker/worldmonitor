@@ -89,7 +89,9 @@ test('FIXTURE VET rejects unknown authority, stale facts, and social claims', ()
   assert.equal(plain.social.verifiedReads, null);
   const held = vetDossier(freshVet({ socialHandle: 'example' }), NOW);
   assert.equal(held.ok, true);
-  assert.equal(held.social.status, 'BLOCKED');
+  assert.equal(held.social.status, 'AWAIT_INPUT');
+  assert.equal(held.social.awaitInput, true);
+  assert.equal(held.social.verified, false);
   assert.equal(held.social.verifiedReads, null);
   const rpc = vetDossier(freshVet({ holders: { complete: false, count: null, at: NOW, top1: null, top10: null } }), NOW);
   assert.equal(rpc.ok, false);

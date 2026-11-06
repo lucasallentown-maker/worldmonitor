@@ -1,0 +1,27 @@
+{
+  "label": "PAPER initial bank. Not a deposit and not a live authorization.",
+  "paperOnly": true,
+  "liveDeposit": false,
+  "liveAuthorization": false,
+  "bankUsd": 200,
+  "bankUsdSource": "user-entered",
+  "bankNote": "Six percent of this paper bank is a 12 dollar ceiling, not an order target.",
+  "freeCashUsd": null,
+  "lockedCapitalUsd": null,
+  "cashNote": "Free cash and locked capital must both be entered and must add up to the paper bank. Neither is assumed.",
+  "realizedProfitUsd": null,
+  "initialRealizedProfitUsd": null,
+  "profitNote": "A fresh paper journal is logical profit 0 and is not a real-money claim. Do not type a profit here.",
+  "feeBps": null,
+  "slippageBps": null,
+  "maxFeeRate": null,
+  "venueFee": "unset-pending-verified-results",
+  "feeNote": "FOMO fee research is separate. These stay empty until that result is verified. The floor formula is not the venue schedule.",
+  "retest": null,
+  "liquidityUsd": null,
+  "kelly": {
+    "probability": null,
+    "payoff": null
+  },
+  "socialHandle": null
+}

@@ -20,19 +20,19 @@ export function createPaperTimers({
   }
   const handles = {};
   let stopped = true;
-  function arm(name, fn) {
+  function arm(name, fn, delay) {
     handles[name] = schedule(() => {
       fn();
-      if (!stopped) arm(name, fn);
-    }, intervals[name]);
+      if (!stopped) arm(name, fn, intervals[name]);
+    }, delay);
   }
   return {
     intervals: { risk: intervals.risk, closePoll: intervals.closePoll, chief: intervals.chief },
-    start() {
+    start(delays = {}) {
       stopped = false;
-      arm('risk', onRisk || (() => {}));
-      arm('closePoll', onClosePoll || (() => {}));
-      arm('chief', onChief || (() => {}));
+      arm('risk', onRisk || (() => {}), delays.risk ?? intervals.risk);
+      arm('closePoll', onClosePoll || (() => {}), delays.closePoll ?? intervals.closePoll);
+      arm('chief', onChief || (() => {}), delays.chief ?? intervals.chief);
     },
     stop() {
       stopped = true;

@@ -43,15 +43,18 @@ test('configured bps produce a cost ledger and unset Kelly sizes zero', () => {
     bankUsdSource: 'user-entered',
     freeCashUsd: 1000,
     lockedCapitalUsd: 0,
-    realizedProfitUsd: 0,
-    liquidityUsd: 100000,
+    initialRealizedProfitUsd: 0,
+    initialRealizedProfitSource: 'user-entered',
     feeBps: 30,
     slippageBps: 50,
     maxFeeRate: 0.05,
     retest: true,
     kelly: { probability: null, payoff: null },
     socialHandle: null,
-  }, { quotePrice: 2 });
+  }, { quotePrice: 2 }, {
+    candidate: { liquidityUsd: 100000, liquiditySource: 'verified-candidate' },
+    ledger: { events: [] },
+  });
   assert.equal(plan.ok, true);
   assert.equal(plan.sizeReady, false);
   assert.equal(plan.notional, 0);
@@ -59,6 +62,27 @@ test('configured bps produce a cost ledger and unset Kelly sizes zero', () => {
   assert.equal(plan.quote.paperPrice, 2.01);
   assert.equal(plan.pnl, null);
   assert.equal(plan.liveOrder, false);
+});
+
+test('the entered 200 is a paper bank ceiling of 12, not spendable cash or a venue fee', () => {
+  const bank = JSON.parse(readFileSync(new URL('../tools/desk-scan/paper.bank.json', import.meta.url), 'utf8'));
+  const plan = planExecutablePaper(bank, {}, { ledger: { events: [] } });
+  assert.equal(plan.bankUsd, 200);
+  assert.equal(plan.bankCeilingUsd, 12);
+  assert.equal(plan.ceilingIsTarget, false);
+  assert.equal(plan.notional, null);
+  assert.equal(plan.sizeReady, false);
+  assert.equal(plan.liveDeposit, false);
+  assert.equal(plan.liveAuthorization, false);
+  assert.equal(plan.venueFee, 'unset-pending-verified-results');
+  assert.ok(plan.missing.includes('freeCashUsd'));
+  assert.ok(plan.missing.includes('lockedCapitalUsd'));
+  assert.ok(plan.missing.includes('feeBps'));
+  const assumed = validatePaperConfig({ ...bank, freeCashUsd: 200 });
+  assert.ok(assumed.reasons.includes('cash-split-incomplete'));
+  const split = validatePaperConfig({ ...bank, freeCashUsd: 50, lockedCapitalUsd: 150, feeBps: 30, slippageBps: 50, maxFeeRate: 0.05, retest: true });
+  assert.equal(split.reasons.includes('cash-split-does-not-match-bank'), false);
+  assert.equal(split.bankCeilingUsd, 12);
 });
 
 test('paper timers are armed on separate delays', async () => {
