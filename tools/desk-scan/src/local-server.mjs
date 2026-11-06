@@ -80,6 +80,7 @@ export function startLocalScanner({
       state.survivingCandidates = cycle?.candidates || 0;
       state.error = cycle?.ok === false ? (cycle.discoveryReason || 'cycle-failed') : null;
       state.phase = state.error ? 'error' : 'idle';
+      if (state.error) console.error(`cycle-failed ${state.error}`);
       state.summary = cycle;
       atomicWriteJson(path.join(outDir, 'status.json'), scannerStatus(state));
     } catch (error) {

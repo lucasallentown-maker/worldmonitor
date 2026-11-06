@@ -146,7 +146,7 @@ Node.js 20 or newer must already be installed from https://nodejs.org/. The laun
 
 Double-click `tools/desk-scan/mac/Start Scanner.command`. It serves only on 127.0.0.1 and opens the page. The page reloads itself every 15 seconds. Scans stay on the 60 second cadence, keep the seen-pool list, and do not overlap. Double-click `tools/desk-scan/mac/Stop Scanner.command` to stop only that scanner.
 
-The page is a public market scan. It is not a fee quote and not a trade. With no verified quotes, the suggested paper entry stays 0. An incomplete holder read is not an approved candidate.
+The page is a public market scan. It is not a fee quote and not a trade. With no verified quotes, the suggested paper entry stays 0. An incomplete holder read is not an approved candidate. If the status says `fetch failed`, wait one cycle and read `tools/desk-scan/local-state/status.json`. The `error` field includes the cause code when Node provides one. `server.log` gets the same line. An HTTP failure stays separate, for example `geckoterminal HTTP 503`.
 
 Open the manual handoff page locally. It is not a hosted site and it does not log into FOMO.
 

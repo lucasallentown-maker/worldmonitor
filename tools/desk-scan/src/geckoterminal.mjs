@@ -62,6 +62,41 @@ export function mapTrade(row) {
   return { timestamp, side, usd, price };
 }
 
+function safeLabel(value) {
+  return typeof value === 'string' && /^[A-Za-z0-9_.:-]{1,80}$/.test(value) ? value : null;
+}
+
+function safeMessage(message) {
+  if (typeof message !== 'string' || message === '' || message === 'fetch failed') return null;
+  const line = message.split('\n')[0].slice(0, 160);
+  if (/:\/\//.test(line) || /[?&][^=\s]+=/.test(line) || /token|secret|authorization|password/i.test(line)) {
+    return 'message-redacted';
+  }
+  return line;
+}
+
+export function describeFetchFailure(err) {
+  const parts = [];
+  const seen = new Set();
+  let current = err;
+  for (let depth = 0; current && depth < 4 && !seen.has(current); depth += 1) {
+    seen.add(current);
+    const code = safeLabel(current.code);
+    const syscall = safeLabel(current.syscall);
+    const hostname = safeLabel(current.hostname);
+    const message = safeMessage(current.message);
+    const bits = [current.name || 'Error'];
+    bits.push(code || (depth === 0 ? null : 'cause-code-absent'));
+    if (syscall) bits.push(syscall);
+    if (hostname) bits.push(hostname);
+    if (message) bits.push(message);
+    parts.push(bits.filter(Boolean).join(' '));
+    current = current.cause || (Array.isArray(current.errors) ? current.errors[0] : null);
+  }
+  if (!parts.some((part) => /[A-Z][A-Z0-9_]{2,}/.test(part))) parts.push('cause-code-absent');
+  return parts.join('; cause ');
+}
+
 async function budgetedGet(url, budgetFile, state, fetchImpl) {
   const gate = allowCall(state, Date.now(), 'scan');
   if (!gate.ok) return { ok: false, reason: gate.reason, state, status: null, body: null };
@@ -75,7 +110,7 @@ async function budgetedGet(url, budgetFile, state, fetchImpl) {
       signal: AbortSignal.timeout(20_000),
     });
   } catch (err) {
-    return { ok: false, reason: `geckoterminal ${err.name}: ${err.message}`, state: gate.state, status: null, body: null };
+    return { ok: false, reason: `geckoterminal ${describeFetchFailure(err)}`, state: gate.state, status: null, body: null };
   }
   if (response.status === 429) {
     return { ok: false, reason: '429-pause-60s', state: pauseFor429(gate.state, Date.now()), status: 429, body: null };
