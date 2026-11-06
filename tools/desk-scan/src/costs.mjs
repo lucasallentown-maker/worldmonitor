@@ -14,11 +14,19 @@ export function paperQuote(input) {
   if (input.slippageBps < 0) {
     return { ok: false, reason: 'slippage-invalid', quotePrice, paperPrice: null };
   }
+  const side = input.side === 'sell' ? 'sell' : 'buy';
+  const factor = input.slippageBps / BPS;
+  const paperPrice = side === 'sell' ? quotePrice * (1 - factor) : quotePrice * (1 + factor);
   return {
     ok: true,
     quotePrice,
+    side,
     slippageBps: input.slippageBps,
-    paperPrice: quotePrice * (1 + input.slippageBps / BPS),
+    slippageScope: 'per-side',
+    paperPrice,
+    simulated: true,
+    executionPromised: false,
+    separateFromFeeCap: true,
     unit: 'dollars-per-unit',
     paper: true,
     liveFill: false,

@@ -13,6 +13,34 @@ export function planExecutablePaper(config, quote = {}, context = {}) {
     evidence: config?.socialEvidence ?? null,
     now: context.now,
   });
+  const scenario = ceilingScenario(checked.bankUsd);
+  const roundTripBudgetUsd = Number.isFinite(checked.bankCeilingUsd) && Number.isFinite(config?.maxFeeRate)
+    ? checked.bankCeilingUsd * config.maxFeeRate
+    : null;
+  const guardConflict = config?.maxFeeScope === 'round-trip'
+    && Number.isFinite(roundTripBudgetUsd)
+    && Number.isFinite(scenario.userGuardUsd)
+    && scenario.userGuardUsd > roundTripBudgetUsd + 1e-9;
+  const readiness = {
+    bankUsd: checked.bankUsd,
+    freeCashUsd: Number.isFinite(config?.freeCashUsd) ? config.freeCashUsd : null,
+    lockedCapitalUsd: Number.isFinite(config?.lockedCapitalUsd) ? config.lockedCapitalUsd : null,
+    maxFeeRate: Number.isFinite(config?.maxFeeRate) ? config.maxFeeRate : null,
+    maxFeeScope: config?.maxFeeScope ?? null,
+    maxFeeBasis: config?.maxFeeScope === 'round-trip' ? 'entry-notional' : null,
+    slippageBps: Number.isFinite(config?.slippageBps) ? config.slippageBps : null,
+    slippageScope: Number.isFinite(config?.slippageBps) ? 'per-side' : null,
+    slippageSimulated: Number.isFinite(config?.slippageBps),
+    executionPromised: false,
+    retest: config?.retest === true ? 'set' : 'unset',
+    kelly: checked.kellyUnset ? 'unset' : 'set',
+    quotes: 'blocked-until-supplied',
+    guardConflict: guardConflict ? 'user-guard-exceeds-round-trip-budget' : null,
+    guardUsdAtCeiling: scenario.userGuardUsd,
+    roundTripBudgetUsdAtCeiling: roundTripBudgetUsd,
+    size: checked.kellyUnset ? 0 : null,
+    liveOrder: false,
+  };
   const bankView = {
     bankUsd: checked.bankUsd,
     bankCeilingUsd: checked.bankCeilingUsd,
@@ -22,13 +50,14 @@ export function planExecutablePaper(config, quote = {}, context = {}) {
     liveAuthorization: false,
     venueFee: checked.venueFee,
     bankDefaultApplied: false,
-    feeScenario: ceilingScenario(checked.bankUsd),
+    feeScenario: scenario,
+    readiness,
   };
   if (!checked.ok) {
     return {
       ok: false,
       sizeReady: false,
-      notional: null,
+      notional: checked.kellyUnset ? 0 : null,
       costs: null,
       quote: null,
       missing: checked.missing,

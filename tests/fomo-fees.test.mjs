@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { BENCH_MS } from '../tools/desk-scan/src/rules.mjs';
 import { ceilingScenario, FEE_QUOTE_MAX_AGE_MS, feeGate, scenarioFee, userGuard } from '../tools/desk-scan/src/fomo-fees.mjs';
+import { paperQuote } from '../tools/desk-scan/src/costs.mjs';
 import { sizePaper } from '../tools/desk-scan/src/size.mjs';
 
 const NOW = Date.parse('2026-11-06T12:00:00.000Z');
@@ -114,6 +115,70 @@ test('a quote gates suggestion and does not become a live fill', () => {
   assert.equal(copied.entry.scope, 'per-leg');
   assert.equal(copied.roundTripKnown, true);
   assert.equal(copied.filled, false);
+});
+
+test('round-trip 4 percent of entry notional passes at equality and rejects above it', () => {
+  const buy = paperQuote({ quotePrice: 2, slippageBps: 100, side: 'buy' });
+  const sell = paperQuote({ quotePrice: 2, slippageBps: 100, side: 'sell' });
+  assert.equal(buy.paperPrice, 2.02);
+  assert.equal(sell.paperPrice, 1.98);
+  assert.equal(buy.slippageScope, 'per-side');
+  assert.equal(buy.executionPromised, false);
+  assert.equal(sell.separateFromFeeCap, true);
+  const atLimit = feeGate({
+    notionalUsd: 100,
+    chain: 'solana',
+    now: NOW,
+    maxFeeRate: 0.04,
+    maxFeeScope: 'round-trip',
+    allowFixture: true,
+    entry: quote('buy', 2, { notionalUsd: 100 }),
+    exit: quote('sell', 2, { notionalUsd: 80 }),
+  });
+  assert.equal(atLimit.pass, true);
+  assert.equal(atLimit.feeRule, undefined);
+  assert.equal(atLimit.roundTripRate, 0.04);
+  assert.equal(atLimit.maxFeeBasis, 'entry-notional');
+  assert.equal(atLimit.guardConflict, false);
+  assert.equal(atLimit.filled, false);
+  assert.equal(atLimit.entry.provenance, 'labeled-fixture');
+  const over = feeGate({
+    notionalUsd: 100,
+    chain: 'solana',
+    now: NOW,
+    maxFeeRate: 0.04,
+    maxFeeScope: 'round-trip',
+    allowFixture: true,
+    entry: quote('buy', 2, { notionalUsd: 100 }),
+    exit: quote('sell', 2.01, { notionalUsd: 80 }),
+  });
+  assert.equal(over.reason, 'fee-above-max');
+  assert.equal(over.notional, 0);
+  const ceiling = feeGate({
+    notionalUsd: 12,
+    chain: 'solana',
+    now: NOW,
+    maxFeeRate: 0.04,
+    maxFeeScope: 'round-trip',
+    allowFixture: true,
+    entry: quote('buy', 0.24),
+    exit: quote('sell', 0.24),
+  });
+  assert.equal(ceiling.feeRule, 'pass');
+  assert.equal(ceiling.reason, 'guard-conflict-needs-decision');
+  assert.equal(ceiling.suggest, false);
+  assert.equal(ceiling.roundTripBudgetUsd, 0.48);
+  assert.equal(ceiling.guard.usd, 0.95);
+  assert.equal(ceiling.maxFeeBasis, 'entry-notional');
+  const missing = feeGate({
+    notionalUsd: 12,
+    chain: 'solana',
+    now: NOW,
+    maxFeeRate: 0.04,
+    maxFeeScope: 'round-trip',
+    entry: quote('buy', 0.24),
+  });
+  assert.equal(missing.reason, 'exit-fee-unknown');
 });
 
 test('paper sizing keeps the bank and does not invent cash when the fee gate rejects', () => {

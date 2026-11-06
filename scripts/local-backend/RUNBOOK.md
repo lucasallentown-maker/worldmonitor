@@ -130,17 +130,16 @@ After the code above, the same history import reached SUFFICIENT 3/3 again. Fear
 | Live orders, wallet, FOMO, funds | BLOCKED | Not implemented |
 | Whole desk | BLOCKED | Not ready |
 
-Minimum choices before a sized paper entry, with no defaults. Units are in `tools/desk-scan/paper.config.example.json`.
+`tools/desk-scan/paper.bank.json` now has the selected paper settings. `freeCashUsd` is 200 and `lockedCapitalUsd` is 0. `maxFeeRate` is 0.04, `maxFeeScope` is `round-trip`, and the basis is the entry notional. Buy fee plus sell fee may equal 4 percent and may not exceed it. That 0.04 is not a per-leg cap. `slippageBps` is 100 on each side, which is 1 percent simulated adverse price, separate from the fee cap, and not a promised execution. A fresh journal profit is 0 and is not a real-money claim.
 
-- `freeCashUsd` and `lockedCapitalUsd` in dollars, entered together, and they must add up to the 200 dollar paper bank. Locked capital is not spendable. Neither side is assumed.
-- `maxFeeRate` as a fraction of notional and `maxFeeScope` as `per-leg` or `round-trip`. Both stay empty until you choose them. An empty cutoff blocks suggestions. It is not filled with a default.
-- A displayed fomo.family buy quote and sell quote. Each needs the fee in dollars, the notional in dollars, the chain, the side, the time, and where the quote came from. An entry quote does not stand in for the exit. The venue is fomo.family, not fomo.fund.
-- `slippageBps` if you want a paper slippage allowance. One basis point is 0.0001 of notional. It is not the venue fee.
+At the 12 dollar ceiling the round-trip budget is 0.48 dollars. The older guard `max(0.0045 * dollars, 0.95)` is 0.95 dollars. That conflict is flagged. A suggestion stays blocked until you decide which rule wins. The guard is not removed. Unknown quotes stay blocked. No flat venue fee or referral is assumed. The bench wait is still 25 minutes.
 
-The published Solana low-route scenario at the 12 dollar ceiling is 0.24 dollars. The older guard `max(0.0045 * dollars, 0.95)` is 0.95 dollars at that size. Both stay in the result. The quote is what the gate uses, and the guard can still reject that quote. Referral 0.50 percent to 0.45 percent is applied only when the quote says that standard rate is in force. A 25 minute quote is stale. The bench wait is still 25 minutes.
-- `retest` set to true only if you want that requirement.
-- Kelly `probability` (0 to 1) and `payoff` (ratio) only after paper history exists. Leave them null. Size stays 0.
-- `socialHandle` null until you have one. No handle is `PASS_PARTIAL`. The public connector is blocked and does not read X.
+Still unset, so size stays 0:
+
+- `retest`
+- Kelly `probability` and `payoff`
+- a displayed fomo.family buy quote and sell quote, each with fee dollars, notional dollars, chain, side, time, and provenance
+- `socialHandle`, if you want one. No handle is `PASS_PARTIAL`
 
 Read-only commands:
 

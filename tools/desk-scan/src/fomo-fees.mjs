@@ -136,7 +136,11 @@ export function ceilingScenario(bankUsd) {
   };
 }
 
-function readQuote(quote, { now, notionalUsd, chain, side }) {
+function moneyUnits(usd) {
+  return Math.round(usd * 10000);
+}
+
+function readQuote(quote, { now, notionalUsd, chain, side, matchNotional = true }) {
   if (!quote || typeof quote !== 'object') return { ok: false, reason: 'fee-quote-missing', liveQuote: false, filled: false };
   const fixture = quote.fixture === true;
   if (fixture && quote.label !== 'FIXTURE — not a live quote') return { ok: false, reason: 'fixture-unlabeled', liveQuote: false, filled: false };
@@ -144,7 +148,10 @@ function readQuote(quote, { now, notionalUsd, chain, side }) {
   if (quote.chain !== chain) return { ok: false, reason: 'fee-chain-mismatch', liveQuote: false, filled: false };
   if (quote.side !== side) return { ok: false, reason: 'fee-side-mismatch', liveQuote: false, filled: false };
   if (!Number.isFinite(quote.feeUsd) || quote.feeUsd < 0) return { ok: false, reason: 'fee-missing', liveQuote: false, filled: false };
-  if (!Number.isFinite(quote.notionalUsd) || Math.abs(quote.notionalUsd - notionalUsd) > 0.001) {
+  if (!Number.isFinite(quote.notionalUsd) || quote.notionalUsd <= 0) {
+    return { ok: false, reason: 'fee-notional-mismatch', liveQuote: false, filled: false };
+  }
+  if (matchNotional && Math.abs(quote.notionalUsd - notionalUsd) > 0.001) {
     return { ok: false, reason: 'fee-notional-mismatch', liveQuote: false, filled: false };
   }
   if (typeof quote.provenance !== 'string' || quote.provenance.trim() === '') {
@@ -187,9 +194,9 @@ export function feeGate({
   if (maxFeeScope !== 'per-leg' && maxFeeScope !== 'round-trip') {
     return roundTripBlock({ reason: 'max-fee-scope-unset', guard });
   }
-  const entryRead = readQuote(entry, { now, notionalUsd, chain, side: 'buy' });
+  const entryRead = readQuote(entry, { now, notionalUsd, chain, side: 'buy', matchNotional: true });
   if (!entryRead.ok) return roundTripBlock({ reason: entryRead.reason, guard, roundTripKnown: false, roundTripUncertainty: 'entry-fee-unknown' });
-  const exitRead = readQuote(exit, { now, notionalUsd, chain, side: 'sell' });
+  const exitRead = readQuote(exit, { now, notionalUsd, chain, side: 'sell', matchNotional: false });
   if (!exitRead.ok) {
     return roundTripBlock({
       reason: exit ? exitRead.reason : 'exit-fee-unknown',
@@ -202,9 +209,14 @@ export function feeGate({
   }
   const roundTripUsd = entryRead.feeUsd + exitRead.feeUsd;
   const roundTripRate = roundTripUsd / notionalUsd;
+  const roundTripBudgetUsd = notionalUsd * maxFeeRate;
   const fixture = entryRead.fixture || exitRead.fixture;
-  const conflict = entryRead.feeUsd < guard.usd || exitRead.feeUsd < guard.usd ? 'quoted-fee-below-user-guard' : null;
-  if (guard.rate > maxFeeRate) {
+  const quotedBelowGuard = entryRead.feeUsd < guard.usd || exitRead.feeUsd < guard.usd;
+  const guardCompetes = maxFeeScope === 'round-trip' && guard.usd > roundTripBudgetUsd + 1e-9;
+  const conflict = guardCompetes
+    ? 'user-guard-exceeds-round-trip-budget'
+    : (quotedBelowGuard ? 'quoted-fee-below-user-guard' : null);
+  if (maxFeeScope === 'per-leg' && guard.rate > maxFeeRate) {
     return roundTripBlock({
       reason: 'user-guard-above-max-fee',
       guard,
@@ -212,14 +224,17 @@ export function feeGate({
       exit: exitRead,
       roundTripUsd,
       roundTripRate,
+      roundTripBudgetUsd,
       roundTripKnown: true,
       conflict,
       maxFeeScope,
+      maxFeeBasis: 'per-leg',
     });
   }
+  const capUnits = moneyUnits(maxFeeScope === 'per-leg' ? notionalUsd * maxFeeRate : roundTripBudgetUsd);
   const above = maxFeeScope === 'per-leg'
-    ? entryRead.rate > maxFeeRate || exitRead.rate > maxFeeRate
-    : roundTripRate > maxFeeRate;
+    ? moneyUnits(entryRead.feeUsd) > capUnits || moneyUnits(exitRead.feeUsd) > capUnits
+    : moneyUnits(roundTripUsd) > capUnits;
   if (above) {
     return roundTripBlock({
       reason: 'fee-above-max',
@@ -230,7 +245,27 @@ export function feeGate({
       roundTripRate,
       roundTripKnown: true,
       conflict,
+      guardConflict: guardCompetes,
       maxFeeScope,
+      maxFeeBasis: maxFeeScope === 'round-trip' ? 'entry-notional' : 'per-leg',
+      roundTripBudgetUsd,
+    });
+  }
+  if (guardCompetes) {
+    return roundTripBlock({
+      reason: 'guard-conflict-needs-decision',
+      feeRule: 'pass',
+      guard,
+      entry: entryRead,
+      exit: exitRead,
+      roundTripUsd,
+      roundTripRate,
+      roundTripBudgetUsd,
+      roundTripKnown: true,
+      conflict,
+      guardConflict: true,
+      maxFeeScope,
+      maxFeeBasis: 'entry-notional',
     });
   }
   if (fixture && !allowFixture) {
@@ -266,6 +301,9 @@ export function feeGate({
     roundTripKnown: true,
     roundTripUncertainty: null,
     conflict,
+    guardConflict: false,
     maxFeeScope,
+    maxFeeBasis: maxFeeScope === 'round-trip' ? 'entry-notional' : 'per-leg',
+    roundTripBudgetUsd,
   };
 }
