@@ -31,12 +31,10 @@ export function vetDossier(input, now) {
   }
   if (!fresh(input.cycleFinishedAt, now, VET_WINDOWS_MS.cycle)) reasons.push('vet-cycle-stale');
 
-  if (!Object.prototype.hasOwnProperty.call(input, 'freezeAuthority')) {
-    reasons.push('authority-unknown');
-  } else if (input.freezeAuthority !== null) {
-    reasons.push('freeze-authority-set');
-  } else if (!fresh(input.authorityAt, now, VET_WINDOWS_MS.authority)) {
-    reasons.push('authority-stale');
+  for (const [field, setReason] of [['mintAuthority', 'mint-authority-set'], ['freezeAuthority', 'freeze-authority-set']]) {
+    if (!Object.prototype.hasOwnProperty.call(input, field)) reasons.push(`${field === 'mintAuthority' ? 'mint' : 'freeze'}-authority-unknown`);
+    else if (input[field] !== null) reasons.push(setReason);
+    else if (!fresh(input.authorityAt, now, VET_WINDOWS_MS.authority)) reasons.push('authority-stale');
   }
 
   const holders = input.holders;

@@ -244,6 +244,17 @@ async function main() {
     UPSTASH_REDIS_REST_TOKEN: token,
   };
   const seedResults = [];
+  const fredExport = process.env.FRED_OBSERVATION_EXPORT;
+  if (fredExport) {
+    console.log('importing sanitized FRED observation export');
+    const imported = await runWait(process.execPath, [path.join(HERE, 'import-fred-observations.mjs'), fredExport], {
+      env: seedEnv,
+      logName: 'import-fred.log',
+      timeoutMs: 60_000,
+    });
+    seedResults.push({ file: 'import-fred-observations.mjs', code: imported.code, signal: imported.signal, elapsedMs: 0 });
+    if (imported.code !== 0) throw new Error('FRED observation import failed');
+  }
   for (const [file, timeoutMs] of SEEDERS) {
     console.log(`seeding ${file}`);
     const started = Date.now();

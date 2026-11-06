@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { assessCrossSourceCoverage, classifyCrypto, classifyFearGreed, classifySignals, requiredCrossSourceKeys } from '../scripts/local-backend/classify.mjs';
+import { buildFredImport } from '../scripts/local-backend/import-fred-observations.mjs';
 import { runReadiness } from '../scripts/local-backend/readiness.mjs';
 
 const NOW = Date.parse('2026-11-06T06:10:00.000Z');
@@ -139,6 +141,21 @@ test('FIXTURE cross-source signals require a fresh non-empty seed', () => {
   );
   assert.equal(empty.ok, false);
   assert.match(empty.reasons.join(' '), /no signals/);
+});
+
+test('REAL FRED export import keeps one observation and does not invent history', () => {
+  const doc = JSON.parse(readFileSync(new URL('../scripts/local-backend/fred-observation-export.json', import.meta.url), 'utf8'));
+  const now = Date.parse('2026-11-06T06:51:00.000Z');
+  const built = buildFredImport(doc, now);
+  assert.equal(built.ok, true);
+  assert.equal(built.sufficientForAllFearGreedDerivatives, false);
+  const m2 = built.keys.find((row) => row.value.series.id === 'M2SL');
+  assert.equal(m2.value.series.observations.length, 1);
+  assert.equal(m2.value.series.observations[0].date, '2026-09-01');
+  assert.equal(m2.value.series.observations[0].value, '23413.9');
+  assert.equal(m2.value.series.provenance.kind, 'imported-fred-export');
+  assert.equal(m2.fetchedAt, Date.parse('2026-11-06T00:49:02.110928-06:00'));
+  assert.throws(() => buildFredImport({ observations: [], api_key: 'nope' }, now));
 });
 
 test('readiness refuses a non-local Redis URL before any request', async () => {

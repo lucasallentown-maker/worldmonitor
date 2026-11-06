@@ -22,9 +22,28 @@
     "httpGreen": "3/3",
     "sufficient": "1/3",
     "result": "NOT SUFFICIENT",
-    "crypto": "sufficient, provider seed, 10 quotes, coinpaprika-tickers+coingecko-fallback",
-    "fearGreedBlocked": ["FRED:M2SL", "FRED:WALCL", "FRED:SOFR", "FRED:BAMLH0A0HYM2", "FRED:BAMLC0A0CM", "FRED:FEDFUNDS", "FRED:T10Y2Y", "FRED:UNRATE"],
-    "crossSource": "HTTP 200 with signals, fresh sources 3/25, blocked"
+    "note": "Before the sanitized FRED import. Fear-and-greed blocked on all eight FRED series."
+  },
+  "fredImportReadiness": {
+    "checkedAt": "2026-11-06T06:55:35.489Z",
+    "command": "FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-observation-export.json node scripts/local-backend/up.mjs",
+    "attempts": 10,
+    "httpGreen": "3/3",
+    "sufficient": "2/3",
+    "result": "NOT SUFFICIENT",
+    "crypto": "sufficient",
+    "signals": "sufficient because each returned signal's own source was fresh; coverage still 3/25 and is reported, not required",
+    "fearGreed": {
+      "httpGreen": true,
+      "sufficient": false,
+      "compositeScore": 47.2,
+      "compositeLabel": "Neutral",
+      "vix": 28.18,
+      "blocked": ["FRED:M2SL", "FRED:WALCL"],
+      "reason": "The export has one official observation per series. SOFR, HY, IG, fed funds, the 10y-2y curve, and unemployment are finite. M2 year-over-year and the Fed balance-sheet change need earlier observations that were not in the export and were not invented."
+    },
+    "scheduledRefresh": false,
+    "provenance": "imported-fred-export retrieval 2026-11-06T00:49:02.110928-06:00"
   },
   "fearGreed": {
     "http": 200,

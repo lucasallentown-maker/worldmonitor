@@ -78,13 +78,22 @@ Sufficient cross-source means every returned signal is fresh and its own source 
 
 The 2026-11-06T06:05:20Z run was HTTP-green 3/3 under the older checker. That evidence is kept in `live-proof.json` and is not a sufficiency pass.
 
-The rerun finished attempt 10 at `2026-11-06T06:24:13Z`:
+The rerun finished attempt 10 at `2026-11-06T06:24:13Z` with HTTP-green 3/3 and sufficient 1/3, before any FRED import.
+
+After the sanitized export was imported and the seeders ran again, attempt 10 at `2026-11-06T06:55:35Z` was:
 
 ```text
-NOT SUFFICIENT (HTTP-green 3/3, sufficient 1/3)
+NOT SUFFICIENT (HTTP-green 3/3, sufficient 2/3)
 ```
 
-Crypto was the one sufficient endpoint. Fear-and-greed was blocked on all eight FRED series. Cross-source was fresh on 3 of 25 keys.
+Crypto and cross-source were sufficient. Fear-and-greed was HTTP 200, composite 47.2 Neutral, VIX 28.18, and still blocked on `FRED:M2SL` and `FRED:WALCL`. SOFR 3.94 (2026-11-04), HY 3.32, IG 0.91, fed funds 3.88 (2026-10-01), 10y-2y 0.38 (2026-11-05), and unemployment 4.2 (2026-09-01) were finite. M2 23413.9 is only the 2026-09-01 print, so the 52-step change stays null. WALCL 6748145 is only the 2026-11-04 print, so the 4-step change stays null. Those earlier observations were not invented. The import is not a scheduled FRED refresh.
+
+```bash
+FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-observation-export.json node scripts/local-backend/up.mjs
+node scripts/local-backend/down.mjs
+```
+
+A lasting deploy should set `FRED_API_KEY` on the host and run `scripts/seed-fred-rates.mjs`. Do not treat the import file as a substitute cron.
 
 Payload sample from the preserved 06:05 HTTP-green run:
 
@@ -152,7 +161,7 @@ Process RSS for that scan was about 77 MB. World Monitor's dev stack was about 6
 | 24h trade count from Dex `transactions.h24` | Tested fixture | `tests/desk-paper.test.mjs`. A long tape without the Dex field fails. |
 | Holder history, two complete snapshots, 10 minutes | Tested fixture | Incomplete snapshots are refused. |
 | VET | Tested fixture | Unknown authority, a set freeze authority, stale cycle, under 100 holders, and a social claim all fail. Social stays unavailable. No social endpoint is called. |
-| SIZE | Tested fixture | Free cash only. Locked capital is returned unchanged. Missing slippage fails. Kelly without probability and payoff sizes 0. |
+| SIZE | Tested fixture | 6% of `bank`, then capped by free cash and 2% of liquidity. Locked capital is not spent. Missing bank, fee, slippage, max fee, or retest fails. Kelly without probability and payoff sizes 0. |
 | Paper ledger | Tested fixture | Open is idempotent. Close does not delete until the journal has `confirmed: true`. Recovery rebuilds from the journal. No P&L field is filled. |
 | RISK | Tested fixture | Malformed volume is not zero. Clocks fire at 5 minutes and 30 seconds. Fee floor above the configured max fails. Entry and exit interfaces do not submit. |
 | CHIEF | Tested fixture | Two failures in an hour stop new entries. `humanWatch` is false. |
@@ -171,6 +180,17 @@ Checked read-only on 2026-11-06. No account was created and no key was requested
 5. Put the key you receive in gitignored `.env.local-backend` as `FRED_API_KEY`. Do not commit it. Fear-and-greed stays insufficient until the FRED seeder has written the eight series and readiness shows those inputs as finite numbers.
 
 VET, SIZE, paper fills, and paper risk are fixture-tested and are not live execution. The desk is not ready.
+
+These paper inputs have no defaults. A missing value fails closed:
+
+- `feeBps`
+- `slippageBps`
+- `maxFeeRate` (the fee floor is `max(0.0045 * dollars, 0.95) / dollars` and must not exceed this)
+- `retest` set to `true` only when you have decided that a retest is required
+- `lockedCapital` (kept unchanged; it is not added to spendable cash)
+- `bank` (the 6% ceiling is `0.06 * bank`; the order is then capped by free cash)
+- Kelly `probability` and `payoff` (if either is absent, size is 0; a probability outside 0–1 or a non-positive payoff fails)
+- `realizedProfit` as a real number, including 0 (it is not assumed)
 
 Committed evidence:
 

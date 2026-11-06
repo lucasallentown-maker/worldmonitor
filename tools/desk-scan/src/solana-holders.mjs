@@ -17,15 +17,20 @@ export function resolveSolanaRpc(env = process.env) {
   return { url: configured, source: 'SOLANA_RPC_URL' };
 }
 
-export function parseMintFreeze(base64) {
+export function parseMintAuthorities(base64) {
   const buf = Buffer.from(base64 || '', 'base64');
   if (buf.length < 82) return { ok: false, reason: 'mint-account-short' };
-  const tag = buf.readUInt32LE(46);
-  if (tag === 0) return { ok: true, freezeAuthority: null };
-  if (tag === 1) {
-    return { ok: true, freezeAuthority: buf.subarray(50, 82).toString('hex') };
+  const read = (tag, offset) => {
+    if (tag === 0) return null;
+    if (tag === 1) return buf.subarray(offset, offset + 32).toString('hex');
+    return undefined;
+  };
+  const mintAuthority = read(buf.readUInt32LE(0), 4);
+  const freezeAuthority = read(buf.readUInt32LE(46), 50);
+  if (mintAuthority === undefined || freezeAuthority === undefined) {
+    return { ok: false, reason: 'mint-authority-tag-unknown' };
   }
-  return { ok: false, reason: 'mint-freeze-tag-unknown' };
+  return { ok: true, mintAuthority, freezeAuthority };
 }
 
 export function parseOwnerAmount(base64) {
@@ -120,9 +125,9 @@ export async function readHolderSnapshot(mint, { rpcUrl, fetchImpl = fetch } = {
     return { ok: false, reason: `mint ${mintInfo.error}`, holderCount: null, invented: false, rpc: endpoint };
   }
   const mintData = mintInfo.result?.value?.data;
-  const freeze = parseMintFreeze(Array.isArray(mintData) ? mintData[0] : mintData);
-  if (!freeze.ok) {
-    return { ok: false, reason: freeze.reason, holderCount: null, invented: false, rpc: endpoint };
+  const authorities = parseMintAuthorities(Array.isArray(mintData) ? mintData[0] : mintData);
+  if (!authorities.ok) {
+    return { ok: false, reason: authorities.reason, holderCount: null, invented: false, rpc: endpoint };
   }
 
   const programs = [
@@ -149,7 +154,8 @@ export async function readHolderSnapshot(mint, { rpcUrl, fetchImpl = fetch } = {
         holderCount: null,
         invented: false,
         rpc: endpoint,
-        freezeAuthority: freeze.freezeAuthority,
+        mintAuthority: authorities.mintAuthority,
+        freezeAuthority: authorities.freezeAuthority,
         programs: programResults,
       };
     }
@@ -184,7 +190,8 @@ export async function readHolderSnapshot(mint, { rpcUrl, fetchImpl = fetch } = {
     top10Above55: counted.top10Above55,
     invented: false,
     rpc: endpoint,
-    freezeAuthority: freeze.freezeAuthority,
+    mintAuthority: authorities.mintAuthority,
+    freezeAuthority: authorities.freezeAuthority,
     accounts,
     pagination: { complete: true, providerLimited: false },
     programs: programResults,

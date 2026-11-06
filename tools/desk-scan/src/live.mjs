@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 import { discoverNewPools, enrichPoolTrades, redactUrl } from './geckoterminal.mjs';
-import { cheapFilter, planDexEnrich } from './rules.mjs';
+import { cheapFilter, planDexEnrich, planGtDossiers } from './rules.mjs';
 import { readHolderSnapshot, redactRpc, resolveSolanaRpc } from './solana-holders.mjs';
 import { atomicWriteJson, cycleFresh, readJson, withLock, CYCLE_MAX_AGE_MS } from './persist.mjs';
 import { scanCycle } from './scan.mjs';
@@ -87,17 +87,21 @@ export async function runPaperScan({
         topOwnerAbove5: snap.ok ? snap.topOwnerAbove5 : null,
         top10Above55: snap.ok ? snap.top10Above55 : null,
       };
-      if (snap.ok && snap.freezeAuthority === null && Number.isInteger(snap.holderCount)) {
+      if (snap.ok && snap.mintAuthority === null && snap.freezeAuthority === null && Number.isInteger(snap.holderCount)) {
         holderProbe.ok = true;
         holderProbe.reason = null;
         holderProbe.holderCount = snap.holderCount;
+        holderProbe.mintAuthority = 'null';
         holderProbe.freezeAuthority = 'null';
+      } else if (snap.ok && snap.mintAuthority !== null) {
+        holderProbe.reason = 'mint-authority-set';
       } else if (snap.ok && snap.freezeAuthority !== null) {
         holderProbe.reason = 'freeze-authority-set';
       }
     }
 
     const selected = new Set(planDexEnrich(pools).map((pool) => pool.contract));
+    const gtDossiers = planGtDossiers(pools);
     const result = scanCycle({
       now,
       source: 'live',
@@ -128,6 +132,8 @@ export async function runPaperScan({
         pools: pools.length,
         calls: discovered.calls,
         origin: redactUrl('https://api.geckoterminal.com'),
+        gtDossiers: gtDossiers.length,
+        dexCandidates: selected.size,
       },
       dexProbe: tradesProbe,
       holderProbe,

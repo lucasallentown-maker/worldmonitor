@@ -13,7 +13,6 @@ function configReady(config) {
   if (!config || config.retest !== true) return 'retest-unconfigured';
   if (!Number.isFinite(config.feeBps) || config.feeBps < 0) return 'fee-unconfigured';
   if (!Number.isFinite(config.slippageBps) || config.slippageBps < 0) return 'slippage-unconfigured';
-  if (!Number.isFinite(config.costReserveRate) || config.costReserveRate < 0) return 'cost-reserve-unconfigured';
   if (!Number.isFinite(config.maxFeeRate) || config.maxFeeRate <= 0) return 'fee-max-unconfigured';
   return null;
 }
@@ -43,12 +42,14 @@ export function sizePaper(input) {
   if (floor > input.config.maxFeeRate) {
     return { ok: false, reason: 'fee-floor-above-configured-max', floor, notional: null, lockedCapital: input.lockedCapital };
   }
-  const reserve = input.realizedProfit > 0 ? input.realizedProfit * input.config.costReserveRate : 0;
-  const spendable = Math.max(0, input.freeCash - reserve);
-  const ceiling = spendable * 0.06;
+  if (!Number.isFinite(input.bank) || input.bank < 0) {
+    return { ok: false, reason: 'bank-unconfigured', notional: null, lockedCapital: input.lockedCapital };
+  }
+  const ceiling = input.bank * 0.06;
+  const freeCap = input.freeCash;
   const liqCap = input.liquidityUsd * 0.02;
-  const cap = Math.min(ceiling, liqCap);
-  let notional = spendable * kelly.fraction;
+  const cap = Math.min(ceiling, freeCap, liqCap);
+  let notional = input.freeCash * kelly.fraction;
   let partial = false;
   if (notional > cap) {
     notional = cap * 0.5;
@@ -61,7 +62,9 @@ export function sizePaper(input) {
     partial,
     lockedCapital: input.lockedCapital,
     lockedCapitalUnchanged: true,
-    reserveFromRealizedProfit: reserve,
+    reserveFromRealizedProfit: input.realizedProfit > 0 ? input.realizedProfit : 0,
+    bankCeiling: ceiling,
+    freeCashCap: freeCap,
     paper: true,
     liveOrder: false,
   };

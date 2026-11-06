@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { scanCycle } from '../tools/desk-scan/src/scan.mjs';
-import { documentedH24TradeCount, tradeMetrics } from '../tools/desk-scan/src/rules.mjs';
+import { documentedH24TradeCount, planDexEnrich, planGtDossiers, tradeMetrics } from '../tools/desk-scan/src/rules.mjs';
 import { holderHistoryReady, recordHolderSnapshot, vetDossier } from '../tools/desk-scan/src/vet.mjs';
 import { kellyFraction, sizePaper } from '../tools/desk-scan/src/size.mjs';
 import { checkDue, feeFloor, heartbeat, paperEntry, riskCheck, volumeRatio, RISK_SPEC } from '../tools/desk-scan/src/risk.mjs';
@@ -34,6 +34,25 @@ test('FIXTURE Dex h24 transaction counts do not require a 24h tape', () => {
   assert.equal(twelve.trades_h24, 220);
   const tapeOnly = tradeMetrics(windows(288), { start: 0, end: 288 * WINDOW, complete: true }, {});
   assert.equal(tapeOnly.reason, 'dex-h24-transactions-undocumented');
+  const published = tradeMetrics([], { complete: false }, {
+    transactions: { h1: { buys: 4, sells: 2 }, h24: { buys: 140, sells: 80 } },
+    volume: { h1: 100, h6: 500, h24: 2000 },
+    priceChange: { h1: '-1.5' },
+  });
+  assert.equal(published.ok, true, published.reason);
+  assert.equal(published.h1Source, 'published');
+  assert.equal(published.buys_h1, 4);
+});
+
+test('FIXTURE GT dossiers are capped at 3 and dex enrich stays separate', () => {
+  const pools = [1, 2, 3, 4].map((n) => ({
+    contract: `Mint${n}${'A'.repeat(28)}`,
+    chain: 'solana',
+    baseMint: `Mint${n}${'A'.repeat(28)}`,
+    liquidityUsd: n * 1000,
+  }));
+  assert.equal(planDexEnrich(pools).length, 4);
+  assert.equal(planGtDossiers(pools).length, 3);
 });
 
 test('FIXTURE holder history needs two complete snapshots ten minutes apart', () => {
@@ -48,6 +67,7 @@ test('FIXTURE holder history needs two complete snapshots ten minutes apart', ()
 function freshVet(overrides = {}) {
   return {
     cycleFinishedAt: NOW - 60_000,
+    mintAuthority: null,
     freezeAuthority: null,
     authorityAt: NOW - 60_000,
     holders: { complete: true, count: 120, at: NOW - 60_000, top1: 0.04, top10: 0.4 },
@@ -65,32 +85,37 @@ function freshVet(overrides = {}) {
 test('FIXTURE VET rejects unknown authority, stale facts, and social claims', () => {
   assert.equal(vetDossier(freshVet(), NOW).ok, true);
   assert.equal(vetDossier(freshVet({ freezeAuthority: 'set' }), NOW).reasons.includes('freeze-authority-set'), true);
+  const noMint = { ...freshVet() };
+  delete noMint.mintAuthority;
+  assert.ok(vetDossier(noMint, NOW).reasons.includes('mint-authority-unknown'));
   const unknown = { ...freshVet() };
   delete unknown.freezeAuthority;
-  assert.ok(vetDossier(unknown, NOW).reasons.includes('authority-unknown'));
+  assert.ok(vetDossier(unknown, NOW).reasons.includes('freeze-authority-unknown'));
   assert.ok(vetDossier(freshVet({ cycleFinishedAt: NOW - 11 * 60 * 1000 }), NOW).reasons.includes('vet-cycle-stale'));
   assert.ok(vetDossier(freshVet({ holders: { complete: true, count: 90, at: NOW, top1: 0.01, top10: 0.2 } }), NOW).reasons.includes('holders-below-100'));
   assert.ok(vetDossier(freshVet({ social: { available: true } }), NOW).reasons.includes('social-claim-rejected'));
 });
 
-const sizeConfig = { retest: true, feeBps: 30, slippageBps: 50, costReserveRate: 0.1, maxFeeRate: 0.05 };
+const sizeConfig = { retest: true, feeBps: 30, slippageBps: 50, maxFeeRate: 0.05 };
 
 test('FIXTURE size uses free cash only and returns zero Kelly without inputs', () => {
   assert.equal(kellyFraction(null).fraction, 0);
   const absent = sizePaper({
-    freeCash: 1000, lockedCapital: 400, realizedProfit: 0, liquidityUsd: 100_000,
+    freeCash: 1000, lockedCapital: 400, bank: 10_000, realizedProfit: 0, liquidityUsd: 100_000,
     kelly: null, config: sizeConfig,
   });
   assert.equal(absent.ok, true);
   assert.equal(absent.notional, 0);
   assert.equal(absent.lockedCapital, 400);
   const sized = sizePaper({
-    freeCash: 1000, lockedCapital: 400, realizedProfit: 100, liquidityUsd: 100_000,
+    freeCash: 1000, lockedCapital: 400, bank: 10_000, realizedProfit: 100, liquidityUsd: 100_000,
     kelly: { probability: 0.6, payoff: 2 }, config: sizeConfig,
   });
   assert.equal(sized.ok, true);
   assert.equal(sized.lockedCapital, 400);
-  assert.ok(sized.notional <= 1000 * 0.06);
+  assert.ok(sized.notional <= 10_000 * 0.06);
+  assert.ok(sized.notional <= 1000);
+  assert.equal(sizePaper({ freeCash: 1000, lockedCapital: 400, realizedProfit: 0, liquidityUsd: 100_000, kelly: null, config: sizeConfig }).reason, 'bank-unconfigured');
   assert.equal(sizePaper({ freeCash: 1000, lockedCapital: 400, realizedProfit: 0, liquidityUsd: 1000, kelly: { probability: 0.6, payoff: 2 }, config: { ...sizeConfig, slippageBps: undefined } }).reason, 'slippage-unconfigured');
 });
 
@@ -184,7 +209,7 @@ test('FIXTURE paper path runs from a passing scan through a confirmed close', ()
     exitPaperPrice: 1.1,
     vet: freshVet(),
     size: {
-      freeCash: 5000, lockedCapital: 1000, realizedProfit: 50, liquidityUsd: 80_000,
+      freeCash: 5000, lockedCapital: 1000, bank: 20_000, realizedProfit: 50, liquidityUsd: 80_000,
       kelly: { probability: 0.55, payoff: 1.5 }, config: sizeConfig,
     },
     risk: {

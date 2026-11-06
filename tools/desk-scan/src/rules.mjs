@@ -89,7 +89,11 @@ export function planDexEnrich(pools) {
     && (pool.baseMint === pool.contract || pool.quoteMint === pool.contract)
   ));
   matched.sort((a, b) => (b.liquidityUsd || 0) - (a.liquidityUsd || 0));
-  return matched.slice(0, MAX_GT_DOSSIERS_PER_CYCLE);
+  return matched.slice(0, MAX_DEX_CALLS_PER_CYCLE);
+}
+
+export function planGtDossiers(pools) {
+  return planDexEnrich(pools).slice(0, MAX_GT_DOSSIERS_PER_CYCLE);
 }
 
 export function completeWindows(trades, observation) {
@@ -158,6 +162,12 @@ function documentedCount(value) {
   return null;
 }
 
+function documentedSigned(value) {
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 function documentedUsd(value) {
   if (value == null || value === '') return null;
   const number = Number(value);
@@ -184,8 +194,28 @@ export function tradeMetrics(trades, observation, dex = {}) {
   if (volumeH6 == null || volumeH24 == null) {
     return { ok: false, reason: 'dex-volume-undocumented', trades_h24: count.trades_h24 };
   }
+  const publishedBuys = documentedCount(dex.transactions?.h1?.buys);
+  const publishedSells = documentedCount(dex.transactions?.h1?.sells);
+  const publishedVolumeH1 = documentedUsd(dex.volume?.h1);
+  const publishedPrice = documentedSigned(dex.priceChange?.h1);
+  if (publishedBuys != null && publishedSells != null && publishedVolumeH1 != null && publishedPrice != null) {
+    if (publishedSells === 0 && publishedBuys >= 20) {
+      return { ok: false, reason: 'h1-zero-sells-20-buys', trades_h24: count.trades_h24 };
+    }
+    return {
+      ok: true,
+      volume_h1: publishedVolumeH1,
+      volume_h6: volumeH6,
+      volume_h24: volumeH24,
+      trades_h24: count.trades_h24,
+      buys_h1: publishedBuys,
+      sells_h1: publishedSells,
+      price_change_h1: publishedPrice,
+      h1Source: 'published',
+    };
+  }
   if (!observation || observation.complete !== true) {
-    return { ok: false, reason: 'window-coverage-incomplete', trades_h24: count.trades_h24 };
+    return { ok: false, reason: 'h1-undocumented', trades_h24: count.trades_h24 };
   }
   const built = completeWindows(trades, observation);
   if (!built.ok) return { ...built, trades_h24: count.trades_h24 };
