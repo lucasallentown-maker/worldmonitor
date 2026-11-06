@@ -1,0 +1,18 @@
+{
+  "label": "PAPER config. Null means unset. This file is not market data and not a fill.",
+  "bankUsd": null,
+  "bankNote": "A prior desk balance of 200 USD is not an authorized default. Leave bankUsd null until you enter the paper bank.",
+  "freeCashUsd": null,
+  "lockedCapitalUsd": null,
+  "realizedProfitUsd": null,
+  "feeBps": null,
+  "slippageBps": null,
+  "maxFeeRate": null,
+  "retest": null,
+  "liquidityUsd": null,
+  "kelly": {
+    "probability": null,
+    "payoff": null
+  },
+  "socialHandle": null
+}

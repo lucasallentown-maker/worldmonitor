@@ -110,6 +110,8 @@ Re-seeded with the same history file, readiness attempt 1 at `2026-11-06T07:05:4
 
 Read-only observation is safe to run with the commands below. The paper pipeline runs and fail-closes, and it is not ready to size a position. Live trading is disabled.
 
+After the code above, the same history import reached SUFFICIENT 3/3 again. Fear-and-greed stayed **48.5 Neutral**, M2 **2026-09-01 23413.9** versus **2025-09-01 22149.2** (`m2Yoy` 5.709912773373308). `node scripts/local-backend/fred-refresh.mjs` then printed `mode=sanitized-history`, `keyRefresh=untested-no-secret`, `freshness=within-import-ttl`. No API key was fetched. The stack was stopped and ports 3000, 6379, and 8079 were closed. The systemd unit files were not enabled.
+
 | Check | Status | Evidence |
 |---|---|---|
 | Install and start | PASS | `npm install`, Redis install, and `FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scripts/local-backend/up.mjs` reached SUFFICIENT 3/3 |
@@ -118,20 +120,23 @@ Read-only observation is safe to run with the commands below. The paper pipeline
 | Read-only public scan | PASS | `node tools/desk-scan/run.mjs --out /tmp/desk-scan-audit` read 40 GeckoTerminal pools, 0 candidates, holder count 323 with mint and freeze both verified null. Chief `NOT_READY`. No order |
 | Paper CLI path | PASS as a labeled fixture | `node tools/desk-scan/run.mjs --paper-fixture tools/desk-scan/fixtures/paper-cycle.json --out /tmp/paper-accept` printed `PAPER FIXTURE PASS`. Idempotent open, close deleted once, second close did not delete, `humanWatch` false, `liveOrder` false |
 | Timers, bench lock, 429 budget, holder history, authority | PASS | `node --test` on the window, readiness, desk-scan, paper, and Fear and Greed doc tests. Clocks are injected. The 429 pause and bench lock tests passed |
-| Fee and Kelly units | BLOCKED | `feeBps` and `slippageBps` are required and unused as a haircut. `maxFeeRate` is a fraction compared with `max(0.0045 * dollars, 0.95) / dollars`. Kelly probability and payoff are not guessed |
-| Paper position sizing | BLOCKED | No empirical paper history, so Kelly stays unset and size is 0 |
-| Social data | BLOCKED | No source. A claim that social data exists is rejected |
-| Scheduled FRED refresh | BLOCKED | Import only. Host key was not fetched here |
+| Kill during close | PASS | `tests/desk-crash-close.test.mjs` SIGKILLs at lock, partial temp, temp, and rename for the journal and the positions file. The position stays until the confirmed close is in `journal.json`. A second close does not delete again |
+| Paper costs and timers | PASS as arithmetic | `feeBps` and `slippageBps` are basis points of notional (1 bp = 0.0001). A quote with 50 bp is `price * 1.005`. Missing rates stay null. Kelly stays unset and size stays 0. The three clocks arm on 5 min, 30 s, and 60 s separately |
+| Paper bank | BLOCKED | `tools/desk-scan/paper.config.example.json` leaves `bankUsd` null. A copied 200 dollar balance is rejected unless `bankUsdSource` is `user-entered`. No default was applied |
+| Social | PASS_PARTIAL | No handle is `PASS_PARTIAL` with `verifiedReads: null`. A handle with no connector is `BLOCKED`. A claimed verified read is rejected. Missing authority or holder RPC still rejects the dossier |
+| Scheduled FRED refresh | PASS for the localhost worker, UNTESTED for a live key | `scripts/local-backend/fred-refresh.mjs` imports sanitized history and refuses a non-local Redis URL. A stale export fails closed. The systemd timer is every 6 hours and was not enabled. Key fetch was not run |
 | Live orders, wallet, FOMO, funds | BLOCKED | Not implemented |
-| Process kill during a paper close | UNTESTED | Recovery from a saved journal is tested. A kill in the middle of a write was not performed |
 | Whole desk | BLOCKED | Not ready |
 
-Minimum choices before a sized paper entry, with no defaults:
+Minimum choices before a sized paper entry, with no defaults. Units are in `tools/desk-scan/paper.config.example.json`.
 
-- `feeBps`, `slippageBps`, and `maxFeeRate` as a fraction
-- `retest` set to true only if you want that requirement
-- `lockedCapital`, `bank`, and `realizedProfit` (use 0 only if that is the real balance)
-- Kelly `probability` and `payoff` only after paper history exists. Do not invent them. Until then, size stays 0
+- `bankUsd` in dollars. Leave it null. A prior 200 dollar desk balance is not a default. Set `bankUsdSource` to `user-entered` only when you type the paper bank yourself.
+- `freeCashUsd`, `lockedCapitalUsd`, `realizedProfitUsd`, and `liquidityUsd` in dollars. Use 0 only when that is the real balance. Locked capital is not spent.
+- `feeBps` and `slippageBps` in basis points of notional. One basis point is 0.0001. There is no venue fee schedule.
+- `maxFeeRate` as a fraction of notional. The floor `max(0.0045 * dollars, 0.95) / dollars` must not exceed it.
+- `retest` set to true only if you want that requirement.
+- Kelly `probability` (0 to 1) and `payoff` (ratio) only after paper history exists. Leave them null. Size stays 0.
+- `socialHandle` null until you have one. No handle is `PASS_PARTIAL`. The public connector is blocked and does not read X.
 
 Read-only commands:
 
@@ -140,7 +145,11 @@ FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scri
 node scripts/local-backend/readiness.mjs
 node tools/desk-scan/run.mjs --out /tmp/desk-scan-audit
 node tools/desk-scan/run.mjs --paper-fixture tools/desk-scan/fixtures/paper-cycle.json --out /tmp/paper-accept
-node --test tests/fred-calendar-windows.test.mjs tests/fear-greed-doc-parity.test.mjs tests/local-backend-readiness.test.mjs tests/desk-scan.test.mjs tests/desk-paper.test.mjs
+node tools/desk-scan/run.mjs --paper-config tools/desk-scan/paper.config.example.json --out /tmp/paper-config
+node --test tests/fred-calendar-windows.test.mjs tests/fred-refresh.test.mjs tests/fear-greed-doc-parity.test.mjs tests/local-backend-readiness.test.mjs tests/desk-scan.test.mjs tests/desk-paper.test.mjs tests/desk-executable.test.mjs tests/desk-crash-close.test.mjs
+# Host timer files only. Do not enable them from this tree:
+# scripts/local-backend/systemd/worldmonitor-fred-refresh.service
+# scripts/local-backend/systemd/worldmonitor-fred-refresh.timer
 node scripts/local-backend/down.mjs
 ```
 

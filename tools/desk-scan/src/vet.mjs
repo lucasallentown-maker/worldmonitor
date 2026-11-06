@@ -10,7 +10,9 @@ export const VET_WINDOWS_MS = Object.freeze({
 
 export const SOCIAL = Object.freeze({
   available: false,
-  reason: 'social-unavailable',
+  status: 'BLOCKED',
+  reason: 'social-connector-unavailable',
+  verifiedReads: null,
   endpoint: null,
 });
 
@@ -67,12 +69,24 @@ export function vetDossier(input, now) {
   } else if (!fresh(input.story.at, now, VET_WINDOWS_MS.story)) {
     reasons.push('story-stale');
   }
-  if (input.social && input.social.available === true) reasons.push('social-claim-rejected');
+  const handle = typeof input.socialHandle === 'string' ? input.socialHandle.trim() : '';
+  const claimed = input.social && (
+    input.social.available === true
+    || Number.isFinite(input.social.verifiedReads)
+    || input.social.status === 'PASS'
+    || input.social.status === 'PASS_PARTIAL'
+  );
+  if (claimed) reasons.push('social-claim-rejected');
+  const social = claimed
+    ? { ...SOCIAL, status: 'REJECTED', reason: 'social-claim-rejected' }
+    : (handle
+      ? { ...SOCIAL, handlePresent: true }
+      : { available: false, status: 'PASS_PARTIAL', reason: 'no-handle', verifiedReads: null, endpoint: null, connector: 'blocked' });
 
   return {
     ok: reasons.length === 0,
     reasons,
-    social: SOCIAL,
+    social,
     paper: true,
     liveOrder: false,
   };

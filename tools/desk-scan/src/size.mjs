@@ -1,3 +1,5 @@
+import { paperCost } from './costs.mjs';
+
 export function kellyFraction(edge) {
   if (!edge || !Number.isFinite(edge.probability) || !Number.isFinite(edge.payoff)) {
     return { ok: true, fraction: 0, reason: 'kelly-undocumented' };
@@ -55,11 +57,13 @@ export function sizePaper(input) {
     notional = cap * 0.5;
     partial = true;
   }
+  const costs = paperCost({ notionalUsd: notional, feeBps: input.config.feeBps, slippageBps: input.config.slippageBps });
   return {
     ok: true,
     reason: kelly.fraction === 0 ? 'kelly-undocumented' : null,
     notional,
     partial,
+    costs,
     lockedCapital: input.lockedCapital,
     lockedCapitalUnchanged: true,
     reserveFromRealizedProfit: input.realizedProfit > 0 ? input.realizedProfit : 0,

@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the localhost FRED refresh every 6 hours
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=6h
+AccuracySec=1min
+Persistent=true
+Unit=worldmonitor-fred-refresh.service
+
+[Install]
+WantedBy=timers.target

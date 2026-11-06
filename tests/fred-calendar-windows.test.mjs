@@ -74,6 +74,25 @@ test('WALCL remains a four-observation step with the real dates', () => {
   assert.equal(uneven.window, 'observation-step');
 });
 
+test('a leap-day anniversary is not rolled forward and month-end stays month-end', () => {
+  assert.equal(calendarYearChange([
+    { date: '2023-02-28', value: 9 },
+    { date: '2024-02-29', value: 10 },
+  ], { asOfMs: Date.parse('2024-03-01T00:00:00Z') }).reason, 'anniversary-not-a-real-date');
+  const monthEnd = calendarYearChange([
+    { date: '2025-03-31', value: '100' },
+    { date: '2026-03-31', value: '110' },
+  ], { asOfMs: Date.parse('2026-04-01T00:00:00Z') });
+  assert.equal(monthEnd.prior.date, '2025-03-31');
+  assert.equal(monthEnd.latest.date, '2026-03-31');
+  assert.equal(monthEnd.pct, 10);
+  assert.equal(calendarYearChange([
+    { date: '2025-09-01', value: 1 },
+    { date: '2025-09-01', value: 2 },
+    { date: '2026-09-01', value: 3 },
+  ], { asOfMs: AS_OF }).reason, 'duplicate-date');
+});
+
 test('the imported M2 history anniversary is 2025-09-01, not 2022-05-01', () => {
   const doc = JSON.parse(readFileSync(new URL('../scripts/local-backend/fred-history-export.json', import.meta.url), 'utf8'));
   const series = doc.series.find((row) => row.series === 'M2SL');

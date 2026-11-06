@@ -83,7 +83,17 @@ function freshVet(overrides = {}) {
 }
 
 test('FIXTURE VET rejects unknown authority, stale facts, and social claims', () => {
-  assert.equal(vetDossier(freshVet(), NOW).ok, true);
+  const plain = vetDossier(freshVet(), NOW);
+  assert.equal(plain.ok, true);
+  assert.equal(plain.social.status, 'PASS_PARTIAL');
+  assert.equal(plain.social.verifiedReads, null);
+  const held = vetDossier(freshVet({ socialHandle: 'example' }), NOW);
+  assert.equal(held.ok, true);
+  assert.equal(held.social.status, 'BLOCKED');
+  assert.equal(held.social.verifiedReads, null);
+  const rpc = vetDossier(freshVet({ holders: { complete: false, count: null, at: NOW, top1: null, top10: null } }), NOW);
+  assert.equal(rpc.ok, false);
+  assert.equal(rpc.social.status, 'PASS_PARTIAL');
   assert.equal(vetDossier(freshVet({ freezeAuthority: 'set' }), NOW).reasons.includes('freeze-authority-set'), true);
   const noMint = { ...freshVet() };
   delete noMint.mintAuthority;
@@ -113,6 +123,11 @@ test('FIXTURE size uses free cash only and returns zero Kelly without inputs', (
   });
   assert.equal(sized.ok, true);
   assert.equal(sized.lockedCapital, 400);
+  assert.equal(sized.costs.feeUsd, sized.notional * 30 / 10_000);
+  assert.equal(sized.costs.slippageUsd, sized.notional * 50 / 10_000);
+  assert.equal(sized.costs.totalUsd, sized.costs.feeUsd + sized.costs.slippageUsd);
+  assert.equal(sized.costs.pnl, null);
+  assert.equal(sized.costs.venueSchedule, null);
   assert.ok(sized.notional <= 10_000 * 0.06);
   assert.ok(sized.notional <= 1000);
   assert.equal(sizePaper({ freeCash: 1000, lockedCapital: 400, realizedProfit: 0, liquidityUsd: 100_000, kelly: null, config: sizeConfig }).reason, 'bank-unconfigured');

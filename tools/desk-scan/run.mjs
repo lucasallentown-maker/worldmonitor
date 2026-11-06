@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runPaperScan } from './src/live.mjs';
 import { runPaperFixture } from './src/paper-cycle.mjs';
+import { planExecutablePaper } from './src/executable.mjs';
 import { atomicWriteJson, withLock } from './src/persist.mjs';
 import { scanCycle } from './src/scan.mjs';
 
@@ -48,6 +49,14 @@ if (paperFixturePath) {
   atomicWriteJson(path.join(outDir, 'paper-accept.json'), output);
   console.log(output.ok ? 'PAPER FIXTURE PASS' : `PAPER FIXTURE FAIL stage=${result.stage}`);
   process.exit(output.ok ? 0 : 1);
+}
+
+const paperConfigPath = arg('--paper-config');
+if (paperConfigPath) {
+  const plan = planExecutablePaper(readJson(paperConfigPath), {});
+  atomicWriteJson(path.join(outDir, 'paper-config.json'), plan);
+  console.log(plan.ok ? 'PAPER CONFIG PASS' : `PAPER CONFIG UNSET ${(plan.missing || []).join(',')}`);
+  process.exit(plan.ok ? 0 : 2);
 }
 
 const fixturePath = arg('--fixture');

@@ -115,7 +115,16 @@
     "readOnlyScan": "40 pools, 0 candidates, holderCount 323, mint and freeze verified null, chief NOT_READY",
     "paperFixtureCli": "PAPER FIXTURE PASS, second close did not delete, humanWatch false",
     "deskReady": false,
-    "liveTrading": "disabled"
+    "liveTrading": "disabled",
+    "fredRefresh": {
+      "mode": "sanitized-history",
+      "keyRefresh": "untested-no-secret",
+      "freshness": "within-import-ttl",
+      "scheduledRefresh": false,
+      "systemdEnabled": false
+    },
+    "paperConfig": "example bankUsd null, CLI exit 2, prior 200 not applied",
+    "killDuringClose": "SIGKILL at 7 write boundaries, one confirmed close"
   },
   "fearGreed": {
     "http": 200,
