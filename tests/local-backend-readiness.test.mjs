@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { classifyCrypto, classifyFearGreed, classifySignals } from '../scripts/local-backend/classify.mjs';
+import { assessCrossSourceCoverage, classifyCrypto, classifyFearGreed, classifySignals, requiredCrossSourceKeys } from '../scripts/local-backend/classify.mjs';
 import { runReadiness } from '../scripts/local-backend/readiness.mjs';
 
 const NOW = Date.parse('2026-11-06T06:10:00.000Z');
@@ -24,10 +24,20 @@ function fearBody(overrides = {}) {
   };
 }
 
-test('FIXTURE fear-greed passes only when sourced, fresh, and not degraded', () => {
-  const ok = classifyFearGreed(fearBody(), meta('yahoo-cboe-cnn-fred-v1', 1), NOW);
-  assert.equal(ok.ok, true, ok.reasons.join('; '));
-  assert.equal(ok.summary.source.sourceVersion, 'yahoo-cboe-cnn-fred-v1');
+test('FIXTURE fear-greed HTTP-green is not sufficient without FRED inputs', () => {
+  const partial = classifyFearGreed(fearBody(), meta('yahoo-cboe-cnn-fred-v1', 1), NOW);
+  assert.equal(partial.httpGreen, true, partial.reasons.join('; '));
+  assert.equal(partial.sufficient, false);
+  assert.equal(partial.ok, false);
+  assert.ok(partial.blocked.some((line) => line.includes('FRED:M2SL')));
+
+  const complete = classifyFearGreed(fearBody({
+    liquidity: { inputs: { m2Yoy: 4.2, fedBsMom: 0.1, sofr: 4.3 } },
+    credit: { inputs: { hySpread: 3.1, igSpread: 1.1 } },
+    macro: { inputs: { fedRate: 4.5, t10y2y: 0.4, unrate: 4.1 } },
+  }), meta('yahoo-cboe-cnn-fred-v1', 1), NOW);
+  assert.equal(complete.sufficient, true, complete.reasons.join('; '));
+  assert.equal(complete.summary.source.sourceVersion, 'yahoo-cboe-cnn-fred-v1');
 
   const degraded = classifyFearGreed(fearBody({ breadth: { score: 50, degraded: true } }), meta('yahoo-cboe-cnn-fred-v1', 1), NOW);
   assert.equal(degraded.ok, false);
@@ -81,12 +91,37 @@ test('FIXTURE cross-source signals require a fresh non-empty seed', () => {
     contributingTypes: [],
     signalCount: 0,
   };
-  const ok = classifySignals(
+  const httpOnly = classifySignals(
     { signals: [signal], evaluatedAt: FRESH, compositeCount: 0 },
     meta('cross-source-v1', 1),
     NOW,
   );
-  assert.equal(ok.ok, true, ok.reasons.join('; '));
+  assert.equal(httpOnly.httpGreen, true, httpOnly.reasons.join('; '));
+  assert.equal(httpOnly.sufficient, false);
+
+  const present = {};
+  for (const key of requiredCrossSourceKeys(NOW)) {
+    present[key] = { _seed: { fetchedAt: FRESH } };
+  }
+  const coverage = assessCrossSourceCoverage(present, NOW);
+  const full = classifySignals(
+    { signals: [signal], evaluatedAt: FRESH, compositeCount: 0 },
+    meta('cross-source-v1', 1),
+    NOW,
+    coverage,
+  );
+  assert.equal(full.sufficient, true, full.reasons.join('; '));
+  delete present['wildfire:fires:v1'];
+  const sparse = assessCrossSourceCoverage(present, NOW);
+  const blocked = classifySignals(
+    { signals: [signal], evaluatedAt: FRESH, compositeCount: 0 },
+    meta('cross-source-v1', 1),
+    NOW,
+    sparse,
+  );
+  assert.equal(blocked.sufficient, false);
+  assert.match(blocked.blocked.join(' '), /sparse cross-source/);
+  assert.match(blocked.blocked.join(' '), /NASA_FIRMS_API_KEY/);
 
   const empty = classifySignals(
     { signals: [], evaluatedAt: FRESH, compositeCount: 0 },

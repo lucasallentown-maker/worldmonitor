@@ -66,9 +66,27 @@ node scripts/local-backend/readiness.mjs
 
 Exit 0 and `READY 3/3` means one attempt had all three healthy. Anything else exits 1. A miss, `provider=degraded`, `unavailable: true`, a category with `degraded: true`, an empty signal list, a stale `seed-meta` record, or a non-local URL is a failure. The script does not follow redirects to another host.
 
-## Result of the live run
+## HTTP-green is not sufficient
 
-Readiness attempt 1 at `2026-11-06T06:05:20Z` was green. A second `node scripts/local-backend/readiness.mjs` also printed `READY 3/3`.
+`node scripts/local-backend/readiness.mjs` exits 0 only when all three endpoints are **sufficient** on one attempt. HTTP 200 with a real payload can still be insufficient.
+
+Sufficient fear-and-greed needs the HTTP checks plus finite FRED inputs for M2, the Fed balance sheet, SOFR, HY and IG spreads, the funds rate, the 10y-2y curve, and unemployment. A neutral score of 50 with null inputs is blocked, not healthy.
+
+Sufficient cross-source needs all 25 source keys fresh. A short signal list built from 3 keys is HTTP-green and blocked. Missing keys that need a credential are named. This tool does not create those credentials and does not call `api.worldmonitor.app`.
+
+## Result of the live runs
+
+The 2026-11-06T06:05:20Z run was HTTP-green 3/3 under the older checker. That evidence is kept in `live-proof.json` and is not a sufficiency pass.
+
+The rerun finished attempt 10 at `2026-11-06T06:24:13Z`:
+
+```text
+NOT SUFFICIENT (HTTP-green 3/3, sufficient 1/3)
+```
+
+Crypto was the one sufficient endpoint. Fear-and-greed was blocked on all eight FRED series. Cross-source was fresh on 3 of 25 keys.
+
+Payload sample from the preserved 06:05 HTTP-green run:
 
 Fear and greed: HTTP 200, composite **44.7 Neutral**, `unavailable: false`, seeded `2026-11-06T06:04:52.014Z`, VIX **28.18**, CNN **20**, AAII bull **34.1** / bear **48.4**, 11 sector ETFs, S&P 500 above the 200-day average **58.32%**. No category had `degraded: true`. Source `yahoo-cboe-cnn-fred-v1`. Liquidity, credit, and macro inputs were null (see the FRED note above). Put/call was null; positioning used Yahoo `^SKEW` at 149.37.
 
@@ -112,11 +130,21 @@ A 1 GB machine does not fit this dev stack: Vite alone was 406 MB after it loade
 
 ## Desk scan
 
-`tools/desk-scan/` does not trade and does not call a market or chain RPC.
+Paper only. No orders, wallet, FOMO session, or funds.
 
 ```bash
-node tools/desk-scan/run.mjs
+node tools/desk-scan/run.mjs --out /tmp/desk-scan-paper
 node --test tests/local-backend-readiness.test.mjs tests/desk-scan.test.mjs
 ```
 
-The first command exited 2 with `live RPC not executed` and chief `NOT_READY`. The tests are fixture-only. They are not a live scan.
+The scan on 2026-11-06T06:22:59Z exited 3, chief `NOT_READY`. It requested two GeckoTerminal new-pool pages (both HTTP 200, 40 pools) and rejected every pool because it was younger than 10 minutes. A dex trades read parsed 62 trades and refused to treat that page as complete 24-hour coverage. `getProgramAccounts` on `https://api.mainnet-beta.solana.com` returned 53 Token-2022 accounts for the probed mint and 51 positive unique owners. Freeze authority was null. The raw top owner and top 10 were both over the 5% and 55% limits, and the count is under 100, so the mint is not a candidate. The public RPC did not deny this small account set. If a later mint is denied, `holderCount` stays null. Set `SOLANA_RPC_URL` in `.env.local-backend` to use another endpoint; the log shows only the host.
+
+Process RSS for that scan was about 77 MB. World Monitor's dev stack was about 624 MB in the earlier measurement. Together that is still too large for a 1 GB machine. Keep the 2 GB minimum and 4 GB comfortable recommendation.
+
+VET, SIZE, FILLS, and RISK are not implemented. The desk is not ready.
+
+Committed evidence:
+
+- `scripts/local-backend/live-proof.json`
+- `tools/desk-scan/live-proof.json`
+- `scripts/local-backend/RUNBOOK.md`

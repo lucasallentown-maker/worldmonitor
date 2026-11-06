@@ -152,6 +152,9 @@ function priceChangePct(windows) {
 }
 
 export function tradeMetrics(trades, observation) {
+  if (!observation || observation.complete !== true) {
+    return { ok: false, reason: 'trade-coverage-incomplete' };
+  }
   const built = completeWindows(trades, observation);
   if (!built.ok) return built;
   const h1 = lastConsecutive(built.windows, 12);
@@ -278,14 +281,19 @@ export function applyBench(contract, bench, now) {
   return { ready: true, bench: next, waitedMs: waited };
 }
 
-export function chiefReport(greens, candidateCount) {
-  const ready = greens === 3;
+export function chiefReport(wmSufficient, candidateCount) {
+  const wmOk = wmSufficient === 3;
   return {
-    ready,
-    status: ready ? 'READY' : 'NOT_READY',
-    wm_greens: greens,
-    required_greens: 3,
+    ready: false,
+    status: 'NOT_READY',
+    wm_sufficient: wmSufficient ?? 0,
+    wm_required: 3,
+    wm_ok: wmOk,
+    reason: wmOk
+      ? 'desk incomplete: VET, SIZE, FILLS, and RISK are not implemented'
+      : 'worldmonitor sufficient greens are below 3',
     vet: 'not-implemented',
+    size: 'not-implemented',
     fills: 'not-implemented',
     risk: 'not-implemented',
     execution: 'disabled',

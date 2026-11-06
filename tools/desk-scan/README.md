@@ -1,8 +1,8 @@
 # Desk scan (research only)
 
-This directory is a separable research filter. It does not place orders, move funds, or talk to a wallet. VET, FILLS, and RISK are not implemented. The chief status is `NOT_READY` unless World Monitor's three local endpoints are green (`wmGreens === 3`).
+This directory is a separable paper filter. It does not place orders, move funds, or talk to a wallet. VET, SIZE, FILLS, and RISK are not implemented, so chief stays `NOT_READY` even when World Monitor has three sufficient greens.
 
-Live GeckoTerminal and Solana RPC clients are intentionally absent. `node tools/desk-scan/run.mjs` exits 2 and writes no candidates. Tests and `--fixture` run only on files whose JSON says `"fixture": true` and `"label": "FIXTURE — not live market data"`.
+`node tools/desk-scan/run.mjs` calls public GeckoTerminal and the public Solana RPC. It writes `scan.json`, `bench.json`, and `gt-budget.json` under the output directory. A `position.json` object in that directory stops the scan before any network call. Fixture tests require `"fixture": true` and `"label": "FIXTURE — not live market data"`.
 
 ## Rules that are implemented
 
@@ -23,8 +23,10 @@ Live GeckoTerminal and Solana RPC clients are intentionally absent. `node tools/
 ## Run
 
 ```bash
-node tools/desk-scan/run.mjs
+node tools/desk-scan/run.mjs --out /tmp/desk-scan-paper
 node --test tests/desk-scan.test.mjs
 ```
 
-The first command is the live path and fail-closes. The test file is fixture-only and is not a live proof.
+The live command is paper-only. On 2026-11-06 it read 40 new Solana pools (2 pages, HTTP 200), rejected all 40 for age under 10 minutes, parsed 62 public trades without treating that page as complete 24h coverage, and counted 51 positive owners on the probed mint from a real `getProgramAccounts` response. Chief exited `NOT_READY`. The measured process RSS was about 77 MB. Details are in `tools/desk-scan/live-proof.json`.
+
+Set `SOLANA_RPC_URL` in `.env.local-backend` if the public RPC refuses `getProgramAccounts`. The scanner prints only the host. A refused call leaves `holderCount` null.

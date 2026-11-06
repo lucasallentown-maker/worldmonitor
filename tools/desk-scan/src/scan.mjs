@@ -34,7 +34,7 @@ export function scanCycle(input) {
       rejected,
       bench: input.bench || {},
       context: worldNewsContext(input.worldNews),
-      chief: chiefReport(input.wmGreens ?? 0, 0),
+      chief: chiefReport(input.wmSufficient ?? input.wmGreens ?? 0, 0),
       source: input.source || 'fixture',
     };
   }
@@ -48,7 +48,7 @@ export function scanCycle(input) {
       rejected,
       bench: input.bench || {},
       context: worldNewsContext(input.worldNews),
-      chief: chiefReport(input.wmGreens ?? 0, 0),
+      chief: chiefReport(input.wmSufficient ?? input.wmGreens ?? 0, 0),
       source: input.source || 'fixture',
     };
   }
@@ -148,7 +148,7 @@ export function scanCycle(input) {
     rejected,
     bench,
     context,
-    chief: chiefReport(input.wmGreens ?? 0, candidates.length),
+    chief: chiefReport(input.wmSufficient ?? input.wmGreens ?? 0, candidates.length),
     source: input.source || 'fixture',
     live: input.source === 'live',
     fixture: input.source !== 'live',

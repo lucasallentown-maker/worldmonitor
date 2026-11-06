@@ -1,0 +1,46 @@
+{
+  "schema": "desk-scan-live-proof/v1",
+  "live": true,
+  "fixture": false,
+  "paper": true,
+  "funds": "disabled",
+  "finishedAt": "2026-11-06T06:22:59.570Z",
+  "command": "node tools/desk-scan/run.mjs --out /tmp/desk-scan-paper2",
+  "discovery": {
+    "origin": "https://api.geckoterminal.com",
+    "pages": 2,
+    "http": [200, 200],
+    "pools": 40
+  },
+  "cheapFilter": {
+    "rejected": 40,
+    "reasons": { "age-outside-10m-48h": 40 },
+    "candidates": 0
+  },
+  "dexProbe": {
+    "pool": "9Kq9ms6UXZ1JwLVsSwu4QuMBNLom4YvvJJjrZDxeGhrt",
+    "mint": "8NWHrHPjkA2RQBih7orgaR2EZSSw77cb4bCY16Jzbonk",
+    "passedCheapFilter": false,
+    "parsedTrades": 62,
+    "observationComplete": false,
+    "reason": "public-trades-page-not-complete-coverage",
+    "countedAsCandidate": false
+  },
+  "holderProbe": {
+    "rpc": "https://api.mainnet-beta.solana.com",
+    "rpcSource": "public-default",
+    "denied": false,
+    "splAccounts": 0,
+    "token2022Accounts": 53,
+    "positiveUniqueOwners": 51,
+    "freezeAuthority": "null",
+    "topOwnerAbove5": true,
+    "top10Above55": true,
+    "holderCountInvented": false,
+    "persistedSnapshot": false,
+    "note": "Public RPC completed getProgramAccounts for this new-pool mint. A zero-balance account was dropped (53 accounts, 51 owners). The mint still fails the age, 100-holder, and raw concentration gates, so it is not a candidate."
+  },
+  "processRssKb": 77232,
+  "chief": "NOT_READY",
+  "notImplemented": ["vet", "size", "fills", "risk"]
+}

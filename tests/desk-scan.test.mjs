@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { mapPool } from '../tools/desk-scan/src/geckoterminal.mjs';
+import { withLock, atomicWriteJson, readJson } from '../tools/desk-scan/src/persist.mjs';
+import { exactOwners, parseOwnerAmount, readHolderSnapshot } from '../tools/desk-scan/src/solana-holders.mjs';
 import {
   BENCH_MS,
   allowCall,
@@ -57,7 +63,7 @@ function passingInput(overrides = {}) {
     pages: [[pool()]],
     bench: { [CONTRACT]: { since: NOW - BENCH_MS - 1000 } },
     trades: { [CONTRACT]: trades },
-    observation: { [CONTRACT]: { start: 0, end: 288 * WINDOW } },
+    observation: { [CONTRACT]: { start: 0, end: 288 * WINDOW, complete: true } },
     accounts: { [CONTRACT]: accounts },
     pagination: { [CONTRACT]: { complete: true, providerLimited: false } },
     mints: { [CONTRACT]: { freezeAuthority: null } },
@@ -116,7 +122,9 @@ test('FIXTURE scan passes one sourced candidate and ranks it', () => {
   assert.equal(row.context.includes('Red Sea'), true);
   assert.equal(row.trades_h24 >= 200, true);
   assert.equal(row.sells_h1 > 0, true);
-  assert.equal(result.chief.status, 'READY');
+  assert.equal(result.chief.status, 'NOT_READY');
+  assert.equal(result.chief.wm_ok, true);
+  assert.match(result.chief.reason, /VET, SIZE, FILLS, and RISK/);
   assert.match(row.rank_reason, /holder growth/);
 });
 
@@ -124,7 +132,8 @@ test('FIXTURE chief is NOT_READY without three greens', () => {
   const result = scanCycle(passingInput({ wmGreens: 2 }));
   assert.equal(result.candidates.length, 1);
   assert.equal(result.chief.status, 'NOT_READY');
-  assert.equal(result.chief.vet, 'not-implemented');
+  assert.equal(result.chief.wm_ok, false);
+  assert.equal(result.chief.size, 'not-implemented');
   assert.equal(result.chief.execution, 'disabled');
 });
 
@@ -167,6 +176,79 @@ test('FIXTURE h1 buys with zero sells, raw treasury concentration, and incomplet
   const rejectedPage = scanCycle(partial);
   assert.equal(rejectedPage.candidates.length, 0);
   assert.ok(rejectedPage.rejected.some((row) => row.reason === 'gpa-page-limit'));
+});
+
+test('FIXTURE GeckoTerminal mapping never promotes FDV to market cap', () => {
+  const mapped = mapPool({
+    attributes: {
+      name: 'FIXTURE / SOL',
+      address: 'pool-fixture',
+      pool_created_at: '2026-11-06T05:00:00Z',
+      reserve_in_usd: '20000',
+      market_cap_usd: null,
+      fdv_usd: '9000000',
+      volume_usd: { h24: '60000' },
+    },
+    relationships: {
+      base_token: { data: { id: `solana_${'A'.repeat(32)}` } },
+      quote_token: { data: { id: 'solana_So11111111111111111111111111111111111111112' } },
+    },
+  });
+  assert.equal(mapped.mcap, null);
+  assert.equal(mapped.fdvIgnored, '9000000');
+  assert.equal(cheapFilter(mapped, NOW).reason, 'mcap-missing-fdv-not-accepted');
+});
+
+test('FIXTURE a denied getProgramAccounts response has no holder count', async () => {
+  const mint = Buffer.alloc(82);
+  mint.writeUInt32LE(0, 46);
+  const fetchImpl = async (_url, init) => {
+    const body = JSON.parse(init.body);
+    if (body.method === 'getAccountInfo') {
+      return { ok: true, json: async () => ({ result: { value: { data: [mint.toString('base64'), 'base64'] } } }) };
+    }
+    return {
+      ok: true,
+      json: async () => ({ error: { code: -32010, message: 'Excluded from account secondary indexes; FIXTURE RPC' } }),
+    };
+  };
+  const snap = await readHolderSnapshot('FixtureMint', { rpcUrl: 'https://example.test', fetchImpl });
+  assert.equal(snap.ok, false);
+  assert.equal(snap.holderCount, null);
+  assert.equal(snap.invented, false);
+  assert.match(snap.reason, /Excluded from account secondary indexes/);
+  assert.equal(snap.rpc, 'https://example.test');
+});
+
+test('FIXTURE raw balances above 2^53 still count as one exact owner', () => {
+  const buf = Buffer.alloc(40);
+  buf.writeBigUInt64LE(2n ** 60n, 32);
+  const whale = parseOwnerAmount(buf.toString('base64'));
+  const dust = Buffer.alloc(40);
+  dust[0] = 1;
+  dust.writeBigUInt64LE(1n, 32);
+  const other = parseOwnerAmount(dust.toString('base64'));
+  const counted = exactOwners([
+    { ...whale, program: 'spl' },
+    { owner: whale.owner, amountRaw: '5', program: 'token2022' },
+    { ...other, program: 'spl' },
+  ]);
+  assert.equal(counted.ok, true);
+  assert.equal(counted.holders, 2);
+  assert.equal(counted.topOwnerAbove5, true);
+});
+
+test('FIXTURE bench lock serializes writers', async () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'desk-lock-'));
+  const file = path.join(dir, 'bench.json');
+  const lock = path.join(dir, 'scan.lock');
+  atomicWriteJson(file, { n: 0 });
+  await Promise.all([0, 1].map(() => withLock(lock, async () => {
+    const current = readJson(file);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    atomicWriteJson(file, { n: current.n + 1 });
+  })));
+  assert.equal(readJson(file).n, 2);
 });
 
 test('FIXTURE a new pool stays on the bench for 25 minutes', () => {

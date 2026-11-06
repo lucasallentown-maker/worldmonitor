@@ -6,7 +6,13 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { classifyCrypto, classifyFearGreed, classifySignals } from './classify.mjs';
+import {
+  assessCrossSourceCoverage,
+  classifyCrypto,
+  classifyFearGreed,
+  classifySignals,
+  requiredCrossSourceKeys,
+} from './classify.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const STATE = path.join(ROOT, '.local-backend');
@@ -80,7 +86,7 @@ async function getJson(url, headers) {
   };
 }
 
-async function readSeedMeta(redisUrl, token, key) {
+async function redisGet(redisUrl, token, key) {
   const response = await fetch(redisUrl, {
     method: 'POST',
     headers: {
@@ -94,13 +100,30 @@ async function readSeedMeta(redisUrl, token, key) {
   });
   if (!response.ok) return { error: `redis HTTP ${response.status}` };
   const payload = await response.json();
-  if (payload.error) return { error: `redis command error` };
-  if (!payload.result) return { error: 'redis miss' };
+  if (payload.error) return { error: 'redis command error' };
+  if (!payload.result) return { value: null };
   try {
-    return { meta: JSON.parse(payload.result) };
+    return { value: JSON.parse(payload.result) };
   } catch {
-    return { error: 'seed-meta is not JSON' };
+    return { error: 'redis value is not JSON' };
   }
+}
+
+async function readSeedMeta(redisUrl, token, key) {
+  const got = await redisGet(redisUrl, token, key);
+  if (got.error) return got;
+  if (got.value == null) return { error: 'redis miss' };
+  return { meta: got.value };
+}
+
+async function loadCrossSourceCoverage(redisUrl, token, now) {
+  const present = {};
+  for (const key of requiredCrossSourceKeys(now)) {
+    const got = await redisGet(redisUrl, token, key);
+    if (got.error) return { error: `${key}: ${got.error}` };
+    present[key] = got.value;
+  }
+  return { coverage: assessCrossSourceCoverage(present, now) };
 }
 
 function localUrl(base, endpointPath) {
@@ -163,7 +186,14 @@ export async function runReadiness({
           const metaRead = await readSeedMeta(redisUrl, redisToken, endpoint.metaKey);
           const meta = metaRead.meta ?? null;
           if (metaRead.error) {
-            classified = { ok: false, reasons: [metaRead.error], summary: null };
+            classified = { httpGreen: false, sufficient: false, ok: false, blocked: [], reasons: [metaRead.error], summary: null };
+          } else if (endpoint.id === 'signals') {
+            const covered = await loadCrossSourceCoverage(redisUrl, redisToken, now());
+            if (covered.error) {
+              classified = { httpGreen: false, sufficient: false, ok: false, blocked: [covered.error], reasons: [covered.error], summary: null };
+            } else {
+              classified = endpoint.classify(got.body, meta, now(), covered.coverage);
+            }
           } else {
             classified = endpoint.classify(got.body, meta, now());
           }
@@ -176,7 +206,10 @@ export async function runReadiness({
         id: endpoint.id,
         path: endpoint.path,
         http,
-        ok: classified.ok,
+        httpGreen: classified.httpGreen === true,
+        sufficient: classified.sufficient === true,
+        ok: classified.ok === true,
+        blocked: classified.blocked || [],
         reasons: classified.reasons,
         summary: classified.summary,
         elapsedMs: Date.now() - started,
@@ -188,11 +221,18 @@ export async function runReadiness({
     if (attempt < attempts) await sleep(gapMs);
   }
   const passed = history.some((row) => row.ok);
+  const last = history.at(-1);
+  const httpGreens = last?.endpoints.filter((endpoint) => endpoint.httpGreen).length ?? 0;
+  const sufficientGreens = passed ? 3 : last?.endpoints.filter((endpoint) => endpoint.sufficient).length ?? 0;
   return {
     ok: passed,
-    reason: passed ? '3/3 green' : 'not all three endpoints were healthy within 10 attempts',
+    reason: passed
+      ? '3/3 sufficient'
+      : `HTTP-green ${httpGreens}/3, sufficient ${sufficientGreens}/3`,
     attempts: history,
-    greens: passed ? 3 : history.at(-1)?.endpoints.filter((e) => e.ok).length ?? 0,
+    greens: sufficientGreens,
+    httpGreens,
+    sufficientGreens,
   };
 }
 
@@ -212,7 +252,9 @@ async function main() {
     live: true,
     fixture: false,
     ok: report.ok,
-    greens: report.greens,
+    greens: report.sufficientGreens ?? report.greens,
+    httpGreens: report.httpGreens ?? 0,
+    sufficientGreens: report.sufficientGreens ?? 0,
     reason: report.reason,
     checkedAt: new Date().toISOString(),
     attemptsRun: report.attempts.length,
@@ -220,10 +262,10 @@ async function main() {
   };
   writeFileSync(path.join(STATE, 'readiness.json'), `${JSON.stringify(out, null, 2)}\n`, { mode: 0o600 });
   for (const row of report.attempts) {
-    const bits = row.endpoints.map((e) => `${e.id} http=${e.http ?? '-'} ${e.ok ? 'ok' : e.reasons[0]}`);
-    console.log(`attempt ${row.attempt} ${row.ok ? 'GREEN' : 'FAIL'} ${bits.join(' | ')}`);
+    const bits = row.endpoints.map((e) => `${e.id} http=${e.http ?? '-'} httpGreen=${e.httpGreen} sufficient=${e.sufficient}`);
+    console.log(`attempt ${row.attempt} ${row.ok ? 'SUFFICIENT' : 'NOT SUFFICIENT'} ${bits.join(' | ')}`);
   }
-  console.log(report.ok ? 'READY 3/3' : `NOT READY (${report.reason})`);
+  console.log(report.ok ? 'SUFFICIENT 3/3' : `NOT SUFFICIENT (${report.reason})`);
   process.exit(report.ok ? 0 : 1);
 }
 

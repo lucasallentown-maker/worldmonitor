@@ -304,12 +304,14 @@ async function main() {
     live: true,
     fixture: false,
     ok: report.ok,
-    greens: report.greens,
+    greens: report.sufficientGreens,
+    httpGreens: report.httpGreens,
+    sufficientGreens: report.sufficientGreens,
     reason: report.reason,
     attemptsRun: report.attempts.length,
     attempts: report.attempts,
   }, null, 2)}\n`, { mode: 0o600 });
-  console.log(report.ok ? 'READY 3/3' : `NOT READY (${report.reason})`);
+  console.log(report.ok ? 'SUFFICIENT 3/3' : `NOT SUFFICIENT (${report.reason})`);
   if (!report.ok) process.exitCode = 1;
 }
 

@@ -10,11 +10,21 @@
   "bind": "127.0.0.1 only",
   "calledApiWorldmonitor": false,
   "readiness": {
-    "ok": true,
-    "greens": 3,
-    "attemptsRun": 1,
-    "secondCommand": "node scripts/local-backend/readiness.mjs",
-    "secondResult": "READY 3/3"
+    "checkedAt": "2026-11-06T06:05:20.146Z",
+    "checker": "http-green-only (before the sufficiency split)",
+    "httpGreen": 3,
+    "note": "Preserved as HTTP evidence. It is not a sufficient-data pass."
+  },
+  "sufficiencyRerun": {
+    "checkedAt": "2026-11-06T06:24:13.234Z",
+    "command": "node scripts/local-backend/up.mjs",
+    "attempts": 10,
+    "httpGreen": "3/3",
+    "sufficient": "1/3",
+    "result": "NOT SUFFICIENT",
+    "crypto": "sufficient, provider seed, 10 quotes, coinpaprika-tickers+coingecko-fallback",
+    "fearGreedBlocked": ["FRED:M2SL", "FRED:WALCL", "FRED:SOFR", "FRED:BAMLH0A0HYM2", "FRED:BAMLC0A0CM", "FRED:FEDFUNDS", "FRED:T10Y2Y", "FRED:UNRATE"],
+    "crossSource": "HTTP 200 with signals, fresh sources 3/25, blocked"
   },
   "fearGreed": {
     "http": 200,
