@@ -85,10 +85,16 @@ export function renderHandoffHtml(view) {
   const warning = view.observation.holderDropUnverified
     ? `<p class="warn">Unverified holder drop. ${escapeHtml(view.observation.holderDropUnverified)} Do not treat that holder series as trustworthy.</p>`
     : '';
+  const scanner = view.scanner
+    ? `<p>Scanner status: ${escapeHtml(view.scanner.phase)}. Last cycle: ${escapeHtml(view.scanner.lastCycleAt || 'none yet')}. ${view.scanner.stale ? 'Stale.' : 'Not stale.'} ${view.scanner.error ? `Error: ${escapeHtml(view.scanner.error)}` : 'No error.'} ${view.scanner.skipped ? `Skipped: ${escapeHtml(view.scanner.skipped)}.` : ''}</p>
+  <p>This is a public market scan. It is not a fee quote and it is not a trade. Suggested paper entry ${escapeHtml(view.paper.suggestedNotionalUsd)}.</p>`
+    : '';
+  const refresh = view.scanner ? '<meta http-equiv="refresh" content="15">' : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  ${refresh}
   <title>Paper handoff — not an order</title>
   <style>
     body { font-family: sans-serif; margin: 2rem; max-width: 46rem; line-height: 1.45; }
@@ -99,6 +105,7 @@ export function renderHandoffHtml(view) {
 </head>
 <body>
   <h1>Paper handoff</h1>
+  ${scanner}
   <p>${escapeHtml(view.headline)}</p>
   <p>Observation ${escapeHtml(view.observation.startedCentral)} to ${escapeHtml(view.observation.endedCentral)}. Cycles ${escapeHtml(view.observation.cycles)}. Unique pools ${escapeHtml(view.observation.uniquePools)}. Surviving candidates ${escapeHtml(view.observation.survivingCandidates)}.</p>
   ${warning}

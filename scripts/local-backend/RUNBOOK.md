@@ -140,6 +140,14 @@ The 2 dollar figure is then capped by free cash, 2 percent of verified-candidate
 
 `retest` does not block the first entry. Adds stay off until you define a measurable retest.
 
+On a Mac, the local scanner does not need the rest of World Monitor.
+
+Node.js 20 or newer must already be installed from https://nodejs.org/. The launcher will not install it, will not use sudo, and will not change security settings.
+
+Double-click `tools/desk-scan/mac/Start Scanner.command`. It serves only on 127.0.0.1 and opens the page. The page reloads itself every 15 seconds. Scans stay on the 60 second cadence, keep the seen-pool list, and do not overlap. Double-click `tools/desk-scan/mac/Stop Scanner.command` to stop only that scanner.
+
+The page is a public market scan. It is not a fee quote and not a trade. With no verified quotes, the suggested paper entry stays 0. An incomplete holder read is not an approved candidate.
+
 Open the manual handoff page locally. It is not a hosted site and it does not log into FOMO.
 
 ```bash
