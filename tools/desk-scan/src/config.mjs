@@ -12,13 +12,15 @@ export const PAPER_UNITS = Object.freeze({
   slippageBps: 'basis-points-of-notional',
   maxFeeRate: 'fraction-of-notional',
   maxFeeScope: 'per-leg-or-round-trip',
-  retest: 'true-only-if-you-require-it',
+  retest: 'adds-only-until-you-define-one',
+  sizeMode: 'paper_fixed_fraction-or-kelly',
+  fixedFraction: 'fraction-of-current-paper-bank',
   'kelly.probability': 'probability-from-0-to-1',
   'kelly.payoff': 'payoff-ratio',
   socialHandle: 'text-or-null',
 });
 
-const REQUIRED = ['bankUsd', 'freeCashUsd', 'lockedCapitalUsd', 'slippageBps', 'maxFeeRate', 'maxFeeScope', 'retest'];
+const REQUIRED = ['bankUsd', 'freeCashUsd', 'lockedCapitalUsd', 'slippageBps', 'maxFeeRate', 'maxFeeScope'];
 
 export const CONFIG_ROLES = Object.freeze({
   userInput: ['bankUsd', 'freeCashUsd', 'lockedCapitalUsd', 'initialRealizedProfitUsd', 'feeBps', 'slippageBps', 'maxFeeRate', 'retest', 'socialHandle', 'socialEvidence'],
@@ -87,9 +89,9 @@ export function configGuide() {
     'The published Solana low-route schedule is a scenario, not a quote. The old floor max(0.0045 * dollars, 0.95) is superseded for paper sizing. It is not an active conflict. A verified buy plus sell at or under 4 percent of the entry notional passes.',
     'Referral 0.50 percent to 0.45 percent applies only when that standard rate is the one in force and the quote says the referral is verified. Fixed Solana bands and the 0.05 percent major rate are not discounted. The major minimum is not published.',
     'slippageBps, if you set it, is basis points of notional (1 bp = 0.0001). It is not a venue fee and it is not guessed.',
-    'User input, boolean: retest true only if you require a retest.',
+    'Selected paper mode is paper_fixed_fraction. fixedFraction 0.01 is an engineering test assumption: 1 percent of the current paper bank, initially 2 dollars. It is not a Kelly probability or payoff. You can change the fraction. Kelly remains available only as sizeMode kelly and stays at 0 until you enter both inputs.',
+    'retest does not block the first entry. Adds stay off until you define a measurable retest.',
     'Not a user input: liquidityUsd. It must come from a verified candidate.',
-    'Not a user input yet: kelly.probability and kelly.payoff. Leave null. Size stays 0 until paper history exists.',
     'Social: socialHandle optional. No handle is PASS_PARTIAL. A handle waits for a public-x-tool evidence file. This process does not call X.',
     'External services, not typed here: FRED, GeckoTerminal, Solana RPC, and the public X tool that produces evidence.',
     'Observation mode does not size a position.',

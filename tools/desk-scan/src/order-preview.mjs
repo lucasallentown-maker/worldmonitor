@@ -2,7 +2,7 @@
 // order API in this process.
 
 import { feeGate } from './fomo-fees.mjs';
-import { kellyFraction } from './size.mjs';
+import { kellyFraction, sizePaper } from './size.mjs';
 import { paperQuote } from './costs.mjs';
 
 export function buildOrderPreview({
@@ -13,17 +13,42 @@ export function buildOrderPreview({
   chain = 'solana',
   now = Date.now(),
 } = {}) {
+  const fixedMode = config.sizeMode === 'paper_fixed_fraction';
   const kelly = kellyFraction(config.kelly);
-  const notional = kelly.ok && kelly.fraction > 0 && Number.isFinite(config.freeCashUsd)
-    ? config.freeCashUsd * kelly.fraction
-    : 0;
+  let notional = 0;
+  let preFeeNotional = null;
+  let feeBudget = null;
   const blockers = [];
-  if (!kelly.ok || kelly.fraction === 0) blockers.push('kelly-unset');
-  if (config.retest !== true) blockers.push('retest-unset');
+  if (fixedMode) {
+    const sized = sizePaper({
+      freeCash: config.freeCashUsd,
+      lockedCapital: config.lockedCapitalUsd,
+      bank: config.bankUsd,
+      realizedProfit: 0,
+      liquidityUsd: null,
+      config,
+      chain,
+      now,
+      entryQuote,
+      exitQuote,
+      allowFixture: false,
+    });
+    notional = sized.notional;
+    preFeeNotional = sized.preFeeNotional;
+    feeBudget = sized.feeBudget;
+    if (sized.notional === 0 && sized.reason) blockers.push(sized.reason);
+  } else if (!kelly.ok || kelly.fraction === 0) {
+    blockers.push('kelly-unset');
+  } else if (Number.isFinite(config.freeCashUsd)) {
+    notional = config.freeCashUsd * kelly.fraction;
+  }
+  if (!fixedMode && config.retest !== true) blockers.push('retest-unset');
   let fee = null;
-  if (!entryQuote || !exitQuote) {
+  if (fixedMode) {
+    fee = null;
+  } else if (!entryQuote || !exitQuote) {
     blockers.push('fee-quote-missing');
-  } else if (!(notional > 0)) {
+  } else if (!fixedMode && !(notional > 0)) {
     fee = { ok: false, reason: 'no-sized-order', filled: false, liveOrder: false, liveQuote: false };
   } else {
     fee = feeGate({
@@ -55,7 +80,13 @@ export function buildOrderPreview({
     paper: true,
     liveOrder: false,
     notional,
-    sizeReason: blockers.includes('kelly-unset') ? 'kelly-undocumented' : null,
+    preFeeNotional,
+    feeBudget,
+    sizeMode: fixedMode ? 'paper_fixed_fraction' : 'kelly',
+    empirical: false,
+    modeCannotLiveExecute: true,
+    addsEnabled: config.retest === true,
+    sizeReason: fixedMode ? (notional > 0 ? null : blockers[0] || null) : (blockers.includes('kelly-unset') ? 'kelly-undocumented' : null),
     fee,
     slippage,
     blockers,

@@ -203,6 +203,96 @@ test('round-trip 4 percent of entry notional passes at equality and rejects abov
   assert.equal(missing.reason, 'exit-fee-unknown');
 });
 
+test('paper fixed fraction is 2 dollars before fees and zero without a passing quote', () => {
+  const config = {
+    sizeMode: 'paper_fixed_fraction',
+    fixedFraction: 0.01,
+    retest: null,
+    slippageBps: 100,
+    maxFeeRate: 0.04,
+    maxFeeScope: 'round-trip',
+  };
+  const before = sizePaper({
+    freeCash: 200,
+    lockedCapital: 0,
+    bank: 200,
+    liquidityUsd: 100000,
+    config,
+    chain: 'solana',
+    now: NOW,
+  });
+  assert.equal(before.preFeeNotional, 2);
+  assert.equal(before.notional, 0);
+  assert.equal(before.reason, 'fee-quote-missing');
+  assert.equal(before.fee, null);
+  assert.equal(before.feeBudget.roundTripBudgetUsd, 0.08);
+  assert.equal(before.feeBudget.incompatibleWithPublishedLowFlat, true);
+  assert.equal(before.feeBudget.assumedRoute, false);
+  assert.equal(before.feeBudget.sizeIncreased, false);
+  assert.equal(before.addsEnabled, false);
+  assert.equal(before.retestBlocksEntry, false);
+  assert.equal(before.modeCannotLiveExecute, true);
+  assert.equal(before.empirical, false);
+  const quoteAt = (side, feeUsd, extra = {}) => quote(side, feeUsd, { notionalUsd: 2, ...extra });
+  const exact = sizePaper({
+    freeCash: 200,
+    lockedCapital: 0,
+    bank: 200,
+    liquidityUsd: 100000,
+    config,
+    chain: 'solana',
+    now: NOW,
+    allowFixture: true,
+    entryQuote: quoteAt('buy', 0.04),
+    exitQuote: quoteAt('sell', 0.04),
+  });
+  assert.equal(exact.notional, 2);
+  assert.equal(exact.preFeeNotional, 2);
+  assert.equal(exact.reason, null);
+  assert.equal(exact.liveOrder, false);
+  const over = sizePaper({
+    freeCash: 200,
+    lockedCapital: 0,
+    bank: 200,
+    liquidityUsd: 100000,
+    config,
+    chain: 'solana',
+    now: NOW,
+    allowFixture: true,
+    entryQuote: quoteAt('buy', 0.04),
+    exitQuote: quoteAt('sell', 0.05),
+  });
+  assert.equal(over.notional, 0);
+  assert.equal(over.preFeeNotional, 2);
+  assert.equal(over.reason, 'fee-above-max');
+  assert.equal(over.sizeIncreased, false);
+  const stale = sizePaper({
+    freeCash: 200,
+    lockedCapital: 0,
+    bank: 200,
+    config,
+    chain: 'solana',
+    now: NOW,
+    allowFixture: true,
+    entryQuote: quoteAt('buy', 0.03, { at: NOW - BENCH_MS - 1 }),
+    exitQuote: quoteAt('sell', 0.03),
+  });
+  assert.equal(stale.notional, 0);
+  assert.equal(stale.reason, 'fee-quote-stale');
+  const kelly = sizePaper({
+    freeCash: 200,
+    lockedCapital: 0,
+    bank: 200,
+    realizedProfit: 0,
+    liquidityUsd: 100000,
+    kelly: null,
+    config: { ...config, sizeMode: 'kelly' },
+  });
+  assert.equal(kelly.notional, 0);
+  assert.equal(kelly.reason, 'kelly-undocumented');
+  assert.equal(kelly.mode, 'kelly');
+});
+
 test('a cheap verified fixture is not blocked by the superseded fee floor', () => {
   const unset = sizePaper({
     freeCash: 200,

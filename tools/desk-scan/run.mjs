@@ -97,7 +97,8 @@ const paperConfigPath = arg('--paper-config');
 if (paperConfigPath) {
   const plan = planExecutablePaper(readJson(paperConfigPath), {});
   atomicWriteJson(path.join(outDir, 'paper-config.json'), plan);
-  console.log(plan.ok ? 'PAPER CONFIG PASS' : `PAPER CONFIG UNSET ${(plan.missing || []).join(',')}`);
+  const unset = (plan.missing || []).filter(Boolean).join(',');
+  console.log(plan.ok ? 'PAPER CONFIG PASS' : `PAPER CONFIG ${plan.reason || 'UNSET'}${unset ? ` ${unset}` : ''}`);
   process.exit(plan.ok ? 0 : 2);
 }
 

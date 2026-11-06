@@ -134,12 +134,18 @@ After the code above, the same history import reached SUFFICIENT 3/3 again. Fear
 
 The older floor `max(0.0045 * dollars, 0.95)` is superseded for this paper policy. It remains in the result as an audit note and it does not block a verified quote. A buy fee plus a sell fee at or under 4 percent of the entry notional passes. Unknown quotes stay blocked. No flat venue fee or referral is assumed. The bench wait is still 25 minutes. An order preview is manual and is not submitted. No venue order API is verified.
 
-Still unset, so size stays 0:
+Paper sizing mode is `paper_fixed_fraction`. `fixedFraction` 0.01 is an engineering test assumption: 1 percent of the current paper bank. On the 200 dollar bank that is 2 dollars before fees. It is not a Kelly probability, payoff, or performance claim. Change `fixedFraction` if you want a different paper fraction. `sizeMode` `kelly` remains available and sizes 0 until both Kelly inputs exist. Neither mode can live execute.
 
-- `retest`
-- Kelly `probability` and `payoff`
-- a displayed fomo.family buy quote and sell quote, each with fee dollars, notional dollars, chain, side, time, and provenance
+The 2 dollar figure is then capped by free cash, 2 percent of verified-candidate liquidity, and 6 percent of the bank. A missing or stale quote, or a round trip above 4 percent of that entry notional, sets the order to 0. The size is not increased. At 2 dollars the 4 percent budget is 0.08 dollars. The published under-5 dollar low-route flat is 0.10 per leg, so two such legs would be 0.20 and would not fit. That comparison does not assume the route and does not invent a fee. The defined simulation can therefore stay with no entry.
+
+`retest` does not block the first entry. Adds stay off until you define a measurable retest.
+
+Still required before a non-zero paper entry:
+
+- a displayed fomo.family buy quote and sell quote for the 2 dollar notional, with fee dollars, side, time, and provenance, whose combined fee is at most 0.08 dollars
 - `socialHandle`, if you want one. No handle is `PASS_PARTIAL`
+
+Kelly inputs stay unused in this mode. No venue order API is verified.
 
 Read-only commands:
 
