@@ -15,8 +15,9 @@
   "feeBps": null,
   "slippageBps": null,
   "maxFeeRate": null,
-  "venueFee": "unset-pending-verified-results",
-  "feeNote": "FOMO fee research is separate. These stay empty until that result is verified. The floor formula is not the venue schedule.",
+  "maxFeeScope": null,
+  "venue": "fomo.family",
+  "feeNote": "Displayed fomo.family buy and sell quotes are required. maxFeeRate and maxFeeScope stay null, so suggestions stay blocked. The 0.24 dollar low-route scenario at the 12 dollar ceiling is not a quote. The user guard at that size is 0.95 dollars and is not the venue schedule.",
   "retest": null,
   "liquidityUsd": null,
   "kelly": {

@@ -3,6 +3,7 @@ import { validatePaperConfig } from './config.mjs';
 import { deriveRealizedProfit } from './ledger-profit.mjs';
 import { sizePaper } from './size.mjs';
 import { ingestSocialEvidence } from './social-evidence.mjs';
+import { ceilingScenario } from './fomo-fees.mjs';
 import { PAPER_INTERVALS_MS } from './timers.mjs';
 
 export function planExecutablePaper(config, quote = {}, context = {}) {
@@ -21,6 +22,7 @@ export function planExecutablePaper(config, quote = {}, context = {}) {
     liveAuthorization: false,
     venueFee: checked.venueFee,
     bankDefaultApplied: false,
+    feeScenario: ceilingScenario(checked.bankUsd),
   };
   if (!checked.ok) {
     return {

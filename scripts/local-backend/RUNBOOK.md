@@ -133,7 +133,11 @@ After the code above, the same history import reached SUFFICIENT 3/3 again. Fear
 Minimum choices before a sized paper entry, with no defaults. Units are in `tools/desk-scan/paper.config.example.json`.
 
 - `freeCashUsd` and `lockedCapitalUsd` in dollars, entered together, and they must add up to the 200 dollar paper bank. Locked capital is not spendable. Neither side is assumed.
-- Venue `feeBps`, `slippageBps`, and `maxFeeRate` stay empty until the separate fee research is verified. The floor `max(0.0045 * dollars, 0.95) / dollars` can reject a later size. It is not the venue schedule.
+- `maxFeeRate` as a fraction of notional and `maxFeeScope` as `per-leg` or `round-trip`. Both stay empty until you choose them. An empty cutoff blocks suggestions. It is not filled with a default.
+- A displayed fomo.family buy quote and sell quote. Each needs the fee in dollars, the notional in dollars, the chain, the side, the time, and where the quote came from. An entry quote does not stand in for the exit. The venue is fomo.family, not fomo.fund.
+- `slippageBps` if you want a paper slippage allowance. One basis point is 0.0001 of notional. It is not the venue fee.
+
+The published Solana low-route scenario at the 12 dollar ceiling is 0.24 dollars. The older guard `max(0.0045 * dollars, 0.95)` is 0.95 dollars at that size. Both stay in the result. The quote is what the gate uses, and the guard can still reject that quote. Referral 0.50 percent to 0.45 percent is applied only when the quote says that standard rate is in force. A 25 minute quote is stale. The bench wait is still 25 minutes.
 - `retest` set to true only if you want that requirement.
 - Kelly `probability` (0 to 1) and `payoff` (ratio) only after paper history exists. Leave them null. Size stays 0.
 - `socialHandle` null until you have one. No handle is `PASS_PARTIAL`. The public connector is blocked and does not read X.

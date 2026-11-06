@@ -1,4 +1,5 @@
 import { paperCost } from './costs.mjs';
+import { feeGate } from './fomo-fees.mjs';
 
 export function kellyFraction(edge) {
   if (!edge || !Number.isFinite(edge.probability) || !Number.isFinite(edge.payoff)) {
@@ -13,7 +14,6 @@ export function kellyFraction(edge) {
 
 function configReady(config) {
   if (!config || config.retest !== true) return 'retest-unconfigured';
-  if (!Number.isFinite(config.feeBps) || config.feeBps < 0) return 'fee-unconfigured';
   if (!Number.isFinite(config.slippageBps) || config.slippageBps < 0) return 'slippage-unconfigured';
   if (!Number.isFinite(config.maxFeeRate) || config.maxFeeRate <= 0) return 'fee-max-unconfigured';
   return null;
@@ -39,10 +39,12 @@ export function sizePaper(input) {
     return { ok: false, reason: kelly.reason, notional: null, lockedCapital: input.lockedCapital };
   }
   const dollars = input.freeCash;
-  const floor = Math.max(0.0045 * dollars, 0.95) / (dollars || NaN);
-  if (!Number.isFinite(floor)) return { ok: false, reason: 'fee-dollars-invalid', notional: null, lockedCapital: input.lockedCapital };
-  if (floor > input.config.maxFeeRate) {
-    return { ok: false, reason: 'fee-floor-above-configured-max', floor, notional: null, lockedCapital: input.lockedCapital };
+  if (input.requireFeeGate !== true) {
+    const floor = Math.max(0.0045 * dollars, 0.95) / (dollars || NaN);
+    if (!Number.isFinite(floor)) return { ok: false, reason: 'fee-dollars-invalid', notional: null, lockedCapital: input.lockedCapital };
+    if (floor > input.config.maxFeeRate) {
+      return { ok: false, reason: 'fee-floor-above-configured-max', floor, notional: null, lockedCapital: input.lockedCapital };
+    }
   }
   if (!Number.isFinite(input.bank) || input.bank < 0) {
     return { ok: false, reason: 'bank-unconfigured', notional: null, lockedCapital: input.lockedCapital };
@@ -57,7 +59,36 @@ export function sizePaper(input) {
     notional = cap * 0.5;
     partial = true;
   }
-  const costs = paperCost({ notionalUsd: notional, feeBps: input.config.feeBps, slippageBps: input.config.slippageBps });
+  const costs = Number.isFinite(input.config.feeBps)
+    ? paperCost({ notionalUsd: notional, feeBps: input.config.feeBps, slippageBps: input.config.slippageBps })
+    : null;
+  if (input.requireFeeGate === true && notional > 0) {
+    const gate = feeGate({
+      notionalUsd: notional,
+      chain: input.chain,
+      entry: input.entryQuote,
+      exit: input.exitQuote,
+      maxFeeRate: input.config.maxFeeRate,
+      maxFeeScope: input.config.maxFeeScope,
+      now: input.now,
+      allowFixture: input.allowFixture === true,
+    });
+    if (!gate.pass || !gate.suggest) {
+      return {
+        ok: false,
+        reason: gate.reason,
+        notional: 0,
+        partial: false,
+        costs,
+        fee: gate,
+        lockedCapital: input.lockedCapital,
+        lockedCapitalUnchanged: true,
+        bankCeiling: ceiling,
+        paper: true,
+        liveOrder: false,
+      };
+    }
+  }
   return {
     ok: true,
     reason: kelly.fraction === 0 ? 'kelly-undocumented' : null,

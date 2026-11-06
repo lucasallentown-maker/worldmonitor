@@ -48,6 +48,7 @@ test('configured bps produce a cost ledger and unset Kelly sizes zero', () => {
     feeBps: 30,
     slippageBps: 50,
     maxFeeRate: 0.05,
+    maxFeeScope: 'per-leg',
     retest: true,
     kelly: { probability: null, payoff: null },
     socialHandle: null,
@@ -74,10 +75,17 @@ test('the entered 200 is a paper bank ceiling of 12, not spendable cash or a ven
   assert.equal(plan.sizeReady, false);
   assert.equal(plan.liveDeposit, false);
   assert.equal(plan.liveAuthorization, false);
-  assert.equal(plan.venueFee, 'unset-pending-verified-results');
+  assert.equal(plan.venueFee, 'external-quote-required');
+  assert.equal(plan.feeScenario.liveQuote, false);
+  assert.equal(plan.feeScenario.solanaLowFeeUsd, plan.feeScenario.notionalUsd * 0.02);
+  assert.equal(plan.feeScenario.userGuardUsd, 0.95);
+  assert.equal(plan.feeScenario.conflict, 'scenario-cheap-route-below-user-guard');
+  assert.equal(plan.notional, null);
   assert.ok(plan.missing.includes('freeCashUsd'));
   assert.ok(plan.missing.includes('lockedCapitalUsd'));
-  assert.ok(plan.missing.includes('feeBps'));
+  assert.ok(plan.missing.includes('maxFeeRate'));
+  assert.ok(plan.missing.includes('maxFeeScope'));
+  assert.equal(plan.missing.includes('feeBps'), false);
   const assumed = validatePaperConfig({ ...bank, freeCashUsd: 200 });
   assert.ok(assumed.reasons.includes('cash-split-incomplete'));
   const split = validatePaperConfig({ ...bank, freeCashUsd: 50, lockedCapitalUsd: 150, feeBps: 30, slippageBps: 50, maxFeeRate: 0.05, retest: true });

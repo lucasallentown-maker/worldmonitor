@@ -11,13 +11,14 @@ export const PAPER_UNITS = Object.freeze({
   feeBps: 'basis-points-of-notional',
   slippageBps: 'basis-points-of-notional',
   maxFeeRate: 'fraction-of-notional',
+  maxFeeScope: 'per-leg-or-round-trip',
   retest: 'true-only-if-you-require-it',
   'kelly.probability': 'probability-from-0-to-1',
   'kelly.payoff': 'payoff-ratio',
   socialHandle: 'text-or-null',
 });
 
-const REQUIRED = ['bankUsd', 'freeCashUsd', 'lockedCapitalUsd', 'feeBps', 'slippageBps', 'maxFeeRate', 'retest'];
+const REQUIRED = ['bankUsd', 'freeCashUsd', 'lockedCapitalUsd', 'slippageBps', 'maxFeeRate', 'maxFeeScope', 'retest'];
 
 export const CONFIG_ROLES = Object.freeze({
   userInput: ['bankUsd', 'freeCashUsd', 'lockedCapitalUsd', 'initialRealizedProfitUsd', 'feeBps', 'slippageBps', 'maxFeeRate', 'retest', 'socialHandle', 'socialEvidence'],
@@ -52,7 +53,7 @@ export function validatePaperConfig(config) {
       reasons.push('cash-split-does-not-match-bank');
     }
   }
-  const venueFeeUnset = ['feeBps', 'slippageBps', 'maxFeeRate'].some((key) => !present(source[key]));
+  const venueFeeUnset = !present(source.maxFeeRate) || !present(source.maxFeeScope);
   return {
     ok: missing.length === 0 && reasons.length === 0,
     missing,
@@ -66,7 +67,7 @@ export function validatePaperConfig(config) {
     paperOnly: true,
     liveDeposit: false,
     liveAuthorization: false,
-    venueFee: venueFeeUnset ? 'unset-pending-verified-results' : 'user-entered-not-a-venue-schedule',
+    venueFee: venueFeeUnset ? 'external-quote-required' : 'cutoff-set-quote-still-required',
     bankDefaultApplied: false,
     prior200Authorized: false,
     falseData: false,
@@ -81,8 +82,11 @@ export function configGuide() {
     'Paper initial bank: bankUsd 200 with bankUsdSource user-entered is the paper bank you named. It is not a deposit and not a live authorization. Six percent of 200 is a 12 dollar ceiling, not an order target.',
     'User choice, dollars: freeCashUsd and lockedCapitalUsd together. They must add up to bankUsd. One side cannot be guessed from the other. Locked capital is not spendable.',
     'A fresh empty journal has paper profit 0. That 0 is not a real-money profit claim. A close without pnl stays unknown and is not stored as zero. initialRealizedProfitUsd is only for a starting balance you type, with initialRealizedProfitSource user-entered.',
-    'Venue fees stay unset until the separate fee research returns. feeBps and slippageBps, if you later enter them, are basis points of notional (1 bp = 0.0001). They are not copied from a venue schedule.',
-    'User input, fraction of notional: maxFeeRate. The floor max(0.0045 * dollars, 0.95) / dollars is a viability check and can reject a size. It is not the venue fee schedule.',
+    'Venue is fomo.family. A displayed buy quote and a displayed sell quote are both required. Each quote needs feeUsd, notionalUsd, chain, side, timestamp, and provenance. A missing, stale, mismatched, or unverifiable quote blocks the suggestion. An entry quote does not prove the exit fee.',
+    'maxFeeRate is a fraction of notional. maxFeeScope is per-leg or round-trip. Leave both null and suggestions stay blocked. There is no default cutoff.',
+    'The published Solana low-route schedule is a scenario, not a quote. At the 12 dollar ceiling that scenario is 0.24 dollars. The separate user guard max(0.0045 * dollars, 0.95) is 0.95 dollars at that size. Those two figures conflict. The guard is not removed, and it is not the venue schedule.',
+    'Referral 0.50 percent to 0.45 percent applies only when that standard rate is the one in force and the quote says the referral is verified. Fixed Solana bands and the 0.05 percent major rate are not discounted. The major minimum is not published.',
+    'slippageBps, if you set it, is basis points of notional (1 bp = 0.0001). It is not a venue fee and it is not guessed.',
     'User input, boolean: retest true only if you require a retest.',
     'Not a user input: liquidityUsd. It must come from a verified candidate.',
     'Not a user input yet: kelly.probability and kelly.payoff. Leave null. Size stays 0 until paper history exists.',
