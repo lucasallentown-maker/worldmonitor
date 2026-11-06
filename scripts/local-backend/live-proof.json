@@ -1,0 +1,69 @@
+{
+  "schema": "worldmonitor-local-proof/v1",
+  "live": true,
+  "fixture": false,
+  "node": "v22.23.4",
+  "command": "node scripts/local-backend/up.mjs",
+  "checkedAt": "2026-11-06T06:05:20.146Z",
+  "apiBase": "http://127.0.0.1:3000",
+  "redisRest": "http://127.0.0.1:8079",
+  "bind": "127.0.0.1 only",
+  "calledApiWorldmonitor": false,
+  "readiness": {
+    "ok": true,
+    "greens": 3,
+    "attemptsRun": 1,
+    "secondCommand": "node scripts/local-backend/readiness.mjs",
+    "secondResult": "READY 3/3"
+  },
+  "fearGreed": {
+    "http": 200,
+    "compositeScore": 44.7,
+    "compositeLabel": "Neutral",
+    "unavailable": false,
+    "seededAt": "2026-11-06T06:04:52.014Z",
+    "vix": 28.18,
+    "cnnFearGreed": 20,
+    "aaiiBull": 34.1,
+    "aaiiBear": 48.4,
+    "pctAbove200d": 58.32,
+    "sectorCount": 11,
+    "degradedCategories": [],
+    "sourceVersion": "yahoo-cboe-cnn-fred-v1",
+    "fredInputs": "null — liquidity, credit, and macro scores are the producer neutral 50"
+  },
+  "crypto": {
+    "http": 200,
+    "provider": "seed",
+    "quoteCount": 10,
+    "unresolvedIds": [],
+    "sourceVersion": "coinpaprika-tickers+coingecko-fallback",
+    "sample": { "symbol": "BTC", "price": 75522.29, "change": -6.29 }
+  },
+  "signals": {
+    "http": 200,
+    "signalCount": 5,
+    "compositeCount": 0,
+    "sourceKeysPopulated": "3/25",
+    "sourceVersion": "cross-source-v1",
+    "summaries": [
+      "Commodity shock: ^VIX +69.7% — extreme move",
+      "Commodity shock: MTF=F +8.3% — significant move",
+      "Extreme weather: 5 active extreme alerts in Latin America",
+      "Extreme weather: 13 active extreme alerts in Western Europe",
+      "Commodity shock: URA -5.3% — significant move"
+    ]
+  },
+  "resourcesRssMb": {
+    "redis": 25,
+    "restProxy": 102,
+    "viteNode": 406,
+    "esbuild": 26,
+    "npmAndShell": 65,
+    "total": 624
+  },
+  "disk": {
+    "appNodeModules": "2.3G",
+    "localBackendNodeModules": "4.9M"
+  }
+}
