@@ -95,6 +95,15 @@ node scripts/local-backend/down.mjs
 
 A lasting deploy should set `FRED_API_KEY` on the host and run `scripts/seed-fred-rates.mjs`. Do not treat the import file as a substitute cron.
 
+The 120-observation history export was imported the same way. Retrieval time `2026-11-06T00:58:30.990372-06:00`. Observations were stored oldest-first because fear-and-greed reads the last array element as the latest print. No dates were added.
+
+```bash
+FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scripts/local-backend/up.mjs
+node scripts/local-backend/down.mjs
+```
+
+That run reached attempt 1 at `2026-11-06T07:00:32Z` with **SUFFICIENT 3/3**. Fear-and-greed was HTTP 200, composite **49.1 Neutral**, VIX 28.18, seeded `2026-11-06T07:00:04.254Z`, no degraded category. M2 52 observations back is the real 2022-05-01 print 21700.2 against 2026-09-01 23413.9 (`m2Yoy` 7.897162238136057). That series is monthly, so this is 52 observations, not a made-up weekly year. WALCL 4 observations back is 2026-10-07 6747560 against 2026-11-04 6748145 (`fedBsMom` 0.008669800639045818). SOFR 3.94, HY 3.32, IG 0.91, fed funds 3.88, 10y-2y 0.38, unemployment 4.2. HY trend was widening. Crypto stayed sufficient with 10 seed quotes. Cross-source stayed sufficient with 5 signals whose own sources were fresh; 3 of 25 keys were fresh and that count is still reported. This does not prove a cloud key fetch or a scheduled refresh.
+
 Payload sample from the preserved 06:05 HTTP-green run:
 
 Fear and greed: HTTP 200, composite **44.7 Neutral**, `unavailable: false`, seeded `2026-11-06T06:04:52.014Z`, VIX **28.18**, CNN **20**, AAII bull **34.1** / bear **48.4**, 11 sector ETFs, S&P 500 above the 200-day average **58.32%**. No category had `degraded: true`. Source `yahoo-cboe-cnn-fred-v1`. Liquidity, credit, and macro inputs were null (see the FRED note above). Put/call was null; positioning used Yahoo `^SKEW` at 149.37.

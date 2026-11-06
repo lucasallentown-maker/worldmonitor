@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { assessCrossSourceCoverage, classifyCrypto, classifyFearGreed, classifySignals, requiredCrossSourceKeys } from '../scripts/local-backend/classify.mjs';
-import { buildFredImport } from '../scripts/local-backend/import-fred-observations.mjs';
+import { buildFredImport, producerStep } from '../scripts/local-backend/import-fred-observations.mjs';
 import { runReadiness } from '../scripts/local-backend/readiness.mjs';
 
 const NOW = Date.parse('2026-11-06T06:10:00.000Z');
@@ -154,8 +154,37 @@ test('REAL FRED export import keeps one observation and does not invent history'
   assert.equal(m2.value.series.observations[0].date, '2026-09-01');
   assert.equal(m2.value.series.observations[0].value, '23413.9');
   assert.equal(m2.value.series.provenance.kind, 'imported-fred-export');
+  assert.equal(built.steps.M2SL, null);
+  assert.equal(built.steps.WALCL, null);
   assert.equal(m2.fetchedAt, Date.parse('2026-11-06T00:49:02.110928-06:00'));
   assert.throws(() => buildFredImport({ observations: [], api_key: 'nope' }, now));
+});
+
+test('REAL FRED history keeps 120 observations and the producer step dates', () => {
+  const doc = JSON.parse(readFileSync(new URL('../scripts/local-backend/fred-history-export.json', import.meta.url), 'utf8'));
+  const now = Date.parse('2026-11-06T07:00:00.000Z');
+  const built = buildFredImport(doc, now);
+  assert.equal(built.ok, true, built.reason);
+  assert.equal(built.sufficientForAllFearGreedDerivatives, true);
+  for (const row of built.keys) {
+    assert.equal(row.value.series.observations.length, 120);
+    assert.equal(row.value.series.provenance.kind, 'imported-fred-export');
+    assert.equal(row.value.series.provenance.scheduledRefresh, false);
+    const dates = row.value.series.observations.map((obs) => obs.date);
+    assert.deepEqual(dates, [...dates].sort());
+  }
+  const m2 = built.keys.find((row) => row.value.series.id === 'M2SL').value.series.observations
+    .map((obs) => ({ date: obs.date, value: Number(obs.value) }));
+  const walcl = built.keys.find((row) => row.value.series.id === 'WALCL').value.series.observations
+    .map((obs) => ({ date: obs.date, value: Number(obs.value) }));
+  assert.deepEqual(producerStep(m2, 52), {
+    latest: { date: '2026-09-01', value: 23413.9 },
+    prior: { date: '2022-05-01', value: 21700.2 },
+  });
+  assert.deepEqual(producerStep(walcl, 4), {
+    latest: { date: '2026-11-04', value: 6748145 },
+    prior: { date: '2026-10-07', value: 6747560 },
+  });
 });
 
 test('readiness refuses a non-local Redis URL before any request', async () => {

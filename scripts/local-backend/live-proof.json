@@ -45,6 +45,50 @@
     "scheduledRefresh": false,
     "provenance": "imported-fred-export retrieval 2026-11-06T00:49:02.110928-06:00"
   },
+  "fredHistoryReadiness": {
+    "checkedAt": "2026-11-06T07:00:32.619Z",
+    "attemptsRun": 1,
+    "result": "SUFFICIENT 3/3",
+    "command": "FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scripts/local-backend/up.mjs",
+    "label": "real imported FRED history, not a cloud key fetch and not a scheduled refresh",
+    "retrievalTime": "2026-11-06T00:58:30.990372-06:00",
+    "observationsEach": 120,
+    "fearGreed": {
+      "http": 200,
+      "sufficient": true,
+      "compositeScore": 49.1,
+      "compositeLabel": "Neutral",
+      "seededAt": "2026-11-06T07:00:04.254Z",
+      "vix": 28.18,
+      "degraded": false,
+      "m2Step": {
+        "observationsBack": 52,
+        "priorDate": "2022-05-01",
+        "priorValue": 21700.2,
+        "latestDate": "2026-09-01",
+        "latestValue": 23413.9,
+        "m2Yoy": 7.897162238136057,
+        "note": "Producer index, not a fabricated weekly calendar. This official M2 series is monthly, so 52 observations is 2022-05-01 through 2026-09-01."
+      },
+      "walclStep": {
+        "observationsBack": 4,
+        "priorDate": "2026-10-07",
+        "priorValue": 6747560,
+        "latestDate": "2026-11-04",
+        "latestValue": 6748145,
+        "fedBsMom": 0.008669800639045818
+      },
+      "sofr": 3.94,
+      "hySpread": 3.32,
+      "igSpread": 0.91,
+      "hyTrend30d": "widening",
+      "fedRate": 3.88,
+      "t10y2y": 0.38,
+      "unrate": 4.2
+    },
+    "crypto": { "sufficient": true, "provider": "seed", "quoteCount": 10 },
+    "signals": { "sufficient": true, "signalCount": 5, "sourceKeysFresh": "3/25 reported, not a 25-key requirement" }
+  },
   "fearGreed": {
     "http": 200,
     "compositeScore": 44.7,

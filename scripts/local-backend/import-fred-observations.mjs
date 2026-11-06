@@ -25,22 +25,66 @@ export function assertNoSecrets(value, pathName = '$') {
   }
 }
 
+function seriesBundles(doc) {
+  if (Array.isArray(doc?.series)) {
+    return doc.series.map((row) => ({
+      series: row?.series,
+      httpstatus: row?.httpstatus,
+      retrievaltime: row?.retrievaltime,
+      observations: Array.isArray(row?.observations)
+        ? row.observations
+        : (row?.date ? [{ date: row.date, value: row.value }] : null),
+    }));
+  }
+  if (Array.isArray(doc?.observations)) {
+    return doc.observations.map((row) => ({
+      series: row?.series,
+      httpstatus: row?.httpstatus,
+      retrievaltime: row?.retrievaltime,
+      observations: [{ date: row?.date, value: row?.value }],
+    }));
+  }
+  return null;
+}
+
+function chronological(observations) {
+  const copy = observations.map((row) => ({ date: row.date, value: row.value }));
+  copy.sort((a, b) => a.date.localeCompare(b.date));
+  return copy;
+}
+
+export function producerStep(observations, stepsBack) {
+  if (!Array.isArray(observations) || observations.length <= stepsBack) return null;
+  return {
+    latest: observations[observations.length - 1],
+    prior: observations[observations.length - 1 - stepsBack],
+  };
+}
+
 export function buildFredImport(doc, now = Date.now()) {
   assertNoSecrets(doc);
-  const rows = Array.isArray(doc?.observations) ? doc.observations : null;
+  const rows = seriesBundles(doc);
   if (!rows) return { ok: false, reason: 'observations missing' };
   const byId = new Map();
   for (const row of rows) {
     if (!row || typeof row.series !== 'string') return { ok: false, reason: 'series id missing' };
     if (row.httpstatus !== 200) return { ok: false, reason: `${row.series} http ${row.httpstatus}` };
-    if (!Number.isFinite(row.value)) return { ok: false, reason: `${row.series} value is not finite` };
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(row.date || '')) return { ok: false, reason: `${row.series} date is not YYYY-MM-DD` };
+    if (!Array.isArray(row.observations) || row.observations.length === 0) {
+      return { ok: false, reason: `${row.series} observations missing` };
+    }
     const retrievalMs = Date.parse(row.retrievaltime || '');
     if (!Number.isFinite(retrievalMs)) return { ok: false, reason: `${row.series} retrieval time missing` };
     const ageMs = now - retrievalMs;
     if (ageMs < -120_000) return { ok: false, reason: `${row.series} retrieval time is in the future` };
     if (ageMs > FRED_TTL_SECONDS * 1000) return { ok: false, reason: `${row.series} retrieval is older than ${FRED_TTL_SECONDS}s` };
-    byId.set(row.series, { ...row, retrievalMs });
+    const seen = new Set();
+    for (const obs of row.observations) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(obs?.date || '')) return { ok: false, reason: `${row.series} date is not YYYY-MM-DD` };
+      if (!Number.isFinite(obs.value)) return { ok: false, reason: `${row.series} value is not finite` };
+      if (seen.has(obs.date)) return { ok: false, reason: `${row.series} duplicate date ${obs.date}` };
+      seen.add(obs.date);
+    }
+    byId.set(row.series, { ...row, retrievalMs, observations: chronological(row.observations) });
   }
   for (const series of REQUIRED) {
     if (!byId.has(series)) return { ok: false, reason: `${series} missing from export` };
@@ -56,26 +100,31 @@ export function buildFredImport(doc, now = Date.now()) {
       value: {
         series: {
           id: series,
-          observations: [{ date: row.date, value: String(row.value) }],
+          observations: row.observations.map((obs) => ({ date: obs.date, value: String(obs.value) })),
           provenance: {
             kind: 'imported-fred-export',
             recurring: false,
+            scheduledRefresh: false,
             httpStatus: 200,
-            observationDate: row.date,
             retrievalTime: row.retrievaltime,
+            newestObservationDate: row.observations.at(-1).date,
+            oldestObservationDate: row.observations[0].date,
+            observationCount: row.observations.length,
           },
         },
       },
     };
   });
+  const m2 = producerStep(byId.get('M2SL').observations, 52);
+  const walcl = producerStep(byId.get('WALCL').observations, 4);
   return {
     ok: true,
     keys,
-    history: {
-      M2SL: 'one observation cannot compute the 52-step M2 change fear-and-greed reads',
-      WALCL: 'one observation cannot compute the 4-step balance-sheet change fear-and-greed reads',
+    steps: {
+      M2SL: m2,
+      WALCL: walcl,
     },
-    sufficientForAllFearGreedDerivatives: false,
+    sufficientForAllFearGreedDerivatives: Boolean(m2 && walcl),
   };
 }
 
@@ -121,10 +170,23 @@ async function main() {
       sourceVersion: 'imported-fred-export',
       recurring: false,
     }, row.ttlSeconds);
-    console.log(`${row.value.series.id} ${row.value.series.observations[0].date} imported ttl=${row.ttlSeconds}s`);
+    const newest = row.value.series.provenance.newestObservationDate;
+    const oldest = row.value.series.provenance.oldestObservationDate;
+    console.log(`${row.value.series.id} n=${row.value.series.observations.length} ${oldest}..${newest} imported ttl=${row.ttlSeconds}s`);
   }
-  console.log('import bridge complete. M2 YoY and WALCL 4-step change remain impossible from one observation each.');
-  console.log('scheduled FRED refresh was not run.');
+  if (built.steps.M2SL) {
+    const step = built.steps.M2SL;
+    console.log(`M2SL 52-step ${step.prior.date} ${step.prior.value} -> ${step.latest.date} ${step.latest.value}`);
+  } else {
+    console.log('M2SL 52-step unavailable from this export');
+  }
+  if (built.steps.WALCL) {
+    const step = built.steps.WALCL;
+    console.log(`WALCL 4-step ${step.prior.date} ${step.prior.value} -> ${step.latest.date} ${step.latest.value}`);
+  } else {
+    console.log('WALCL 4-step unavailable from this export');
+  }
+  console.log('scheduled FRED refresh was not run. provenance=imported-fred-export');
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
