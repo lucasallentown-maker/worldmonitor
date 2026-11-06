@@ -1,0 +1,12 @@
+[Unit]
+Description=World Monitor localhost FRED refresh
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/worldmonitor
+EnvironmentFile=-/opt/worldmonitor/.env.local-backend
+Environment=FRED_REFRESH_ALLOW_KEY_FETCH=1
+ExecStart=/usr/bin/node scripts/local-backend/fred-refresh.mjs
+NoNewPrivileges=true
+PrivateTmp=true

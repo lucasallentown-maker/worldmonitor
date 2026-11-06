@@ -1,0 +1,179 @@
+{
+  "schema": "worldmonitor-local-proof/v1",
+  "live": true,
+  "fixture": false,
+  "node": "v22.23.4",
+  "command": "node scripts/local-backend/up.mjs",
+  "checkedAt": "2026-11-06T06:05:20.146Z",
+  "apiBase": "http://127.0.0.1:3000",
+  "redisRest": "http://127.0.0.1:8079",
+  "bind": "127.0.0.1 only",
+  "calledApiWorldmonitor": false,
+  "readiness": {
+    "checkedAt": "2026-11-06T06:05:20.146Z",
+    "checker": "http-green-only (before the sufficiency split)",
+    "httpGreen": 3,
+    "note": "Preserved as HTTP evidence. It is not a sufficient-data pass."
+  },
+  "sufficiencyRerun": {
+    "checkedAt": "2026-11-06T06:24:13.234Z",
+    "command": "node scripts/local-backend/up.mjs",
+    "attempts": 10,
+    "httpGreen": "3/3",
+    "sufficient": "1/3",
+    "result": "NOT SUFFICIENT",
+    "note": "Before the sanitized FRED import. Fear-and-greed blocked on all eight FRED series."
+  },
+  "fredImportReadiness": {
+    "checkedAt": "2026-11-06T06:55:35.489Z",
+    "command": "FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-observation-export.json node scripts/local-backend/up.mjs",
+    "attempts": 10,
+    "httpGreen": "3/3",
+    "sufficient": "2/3",
+    "result": "NOT SUFFICIENT",
+    "crypto": "sufficient",
+    "signals": "sufficient because each returned signal's own source was fresh; coverage still 3/25 and is reported, not required",
+    "fearGreed": {
+      "httpGreen": true,
+      "sufficient": false,
+      "compositeScore": 47.2,
+      "compositeLabel": "Neutral",
+      "vix": 28.18,
+      "blocked": ["FRED:M2SL", "FRED:WALCL"],
+      "reason": "The export has one official observation per series. SOFR, HY, IG, fed funds, the 10y-2y curve, and unemployment are finite. M2 year-over-year and the Fed balance-sheet change need earlier observations that were not in the export and were not invented."
+    },
+    "scheduledRefresh": false,
+    "provenance": "imported-fred-export retrieval 2026-11-06T00:49:02.110928-06:00"
+  },
+  "fredHistoryReadiness": {
+    "checkedAt": "2026-11-06T07:00:32.619Z",
+    "attemptsRun": 1,
+    "result": "SUFFICIENT 3/3",
+    "command": "FRED_OBSERVATION_EXPORT=scripts/local-backend/fred-history-export.json node scripts/local-backend/up.mjs",
+    "label": "real imported FRED history, not a cloud key fetch and not a scheduled refresh",
+    "retrievalTime": "2026-11-06T00:58:30.990372-06:00",
+    "observationsEach": 120,
+    "fearGreed": {
+      "http": 200,
+      "sufficient": true,
+      "compositeScore": 49.1,
+      "compositeLabel": "Neutral",
+      "seededAt": "2026-11-06T07:00:04.254Z",
+      "vix": 28.18,
+      "degraded": false,
+      "m2Step": {
+        "observationsBack": 52,
+        "priorDate": "2022-05-01",
+        "priorValue": 21700.2,
+        "latestDate": "2026-09-01",
+        "latestValue": 23413.9,
+        "m2Yoy": 7.897162238136057,
+        "note": "Producer index, not a fabricated weekly calendar. This official M2 series is monthly, so 52 observations is 2022-05-01 through 2026-09-01."
+      },
+      "walclStep": {
+        "observationsBack": 4,
+        "priorDate": "2026-10-07",
+        "priorValue": 6747560,
+        "latestDate": "2026-11-04",
+        "latestValue": 6748145,
+        "fedBsMom": 0.008669800639045818
+      },
+      "sofr": 3.94,
+      "hySpread": 3.32,
+      "igSpread": 0.91,
+      "hyTrend30d": "widening",
+      "fedRate": 3.88,
+      "t10y2y": 0.38,
+      "unrate": 4.2
+    },
+    "crypto": { "sufficient": true, "provider": "seed", "quoteCount": 10 },
+    "signals": { "sufficient": true, "signalCount": 5, "sourceKeysFresh": "3/25 reported, not a 25-key requirement" }
+  },
+  "m2CalendarYearReadiness": {
+    "checkedAt": "2026-11-06T07:05:42.903Z",
+    "result": "SUFFICIENT 3/3",
+    "label": "real imported FRED history after the calendar-year M2 correction. Not a cloud key fetch and not a scheduled refresh.",
+    "fearGreed": {
+      "compositeScore": 48.5,
+      "compositeLabel": "Neutral",
+      "seededAt": "2026-11-06T07:05:15.096Z",
+      "vix": 28.18,
+      "m2Window": "calendar-year",
+      "m2LatestDate": "2026-09-01",
+      "m2LatestValue": 23413.9,
+      "m2PriorDate": "2025-09-01",
+      "m2PriorValue": 22149.2,
+      "m2Yoy": 5.709912773373308,
+      "walclWindow": "4-observation-step",
+      "walclLatestDate": "2026-11-04",
+      "walclLatestValue": 6748145,
+      "walclPriorDate": "2026-10-07",
+      "walclPriorValue": 6747560,
+      "fedBsMom": 0.008669800639045818,
+      "sofr": 3.94
+    },
+    "readOnlyScan": "40 pools, 0 candidates, holderCount 323, mint and freeze verified null, chief NOT_READY",
+    "paperFixtureCli": "PAPER FIXTURE PASS, second close did not delete, humanWatch false",
+    "deskReady": false,
+    "liveTrading": "disabled",
+    "fredRefresh": {
+      "mode": "sanitized-history",
+      "keyRefresh": "untested-no-secret",
+      "freshness": "within-import-ttl",
+      "scheduledRefresh": false,
+      "systemdEnabled": false
+    },
+    "paperConfig": "example bankUsd null, CLI exit 2, prior 200 not applied",
+    "killDuringClose": "SIGKILL at 7 write boundaries, one confirmed close"
+  },
+  "fearGreed": {
+    "http": 200,
+    "compositeScore": 44.7,
+    "compositeLabel": "Neutral",
+    "unavailable": false,
+    "seededAt": "2026-11-06T06:04:52.014Z",
+    "vix": 28.18,
+    "cnnFearGreed": 20,
+    "aaiiBull": 34.1,
+    "aaiiBear": 48.4,
+    "pctAbove200d": 58.32,
+    "sectorCount": 11,
+    "degradedCategories": [],
+    "sourceVersion": "yahoo-cboe-cnn-fred-v1",
+    "fredInputs": "null — liquidity, credit, and macro scores are the producer neutral 50"
+  },
+  "crypto": {
+    "http": 200,
+    "provider": "seed",
+    "quoteCount": 10,
+    "unresolvedIds": [],
+    "sourceVersion": "coinpaprika-tickers+coingecko-fallback",
+    "sample": { "symbol": "BTC", "price": 75522.29, "change": -6.29 }
+  },
+  "signals": {
+    "http": 200,
+    "signalCount": 5,
+    "compositeCount": 0,
+    "sourceKeysPopulated": "3/25",
+    "sourceVersion": "cross-source-v1",
+    "summaries": [
+      "Commodity shock: ^VIX +69.7% — extreme move",
+      "Commodity shock: MTF=F +8.3% — significant move",
+      "Extreme weather: 5 active extreme alerts in Latin America",
+      "Extreme weather: 13 active extreme alerts in Western Europe",
+      "Commodity shock: URA -5.3% — significant move"
+    ]
+  },
+  "resourcesRssMb": {
+    "redis": 25,
+    "restProxy": 102,
+    "viteNode": 406,
+    "esbuild": 26,
+    "npmAndShell": 65,
+    "total": 624
+  },
+  "disk": {
+    "appNodeModules": "2.3G",
+    "localBackendNodeModules": "4.9M"
+  }
+}

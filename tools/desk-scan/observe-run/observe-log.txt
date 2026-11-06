@@ -1,0 +1,23 @@
+note: gapMs after cycle 1 is NaN in this log. Measured start-to-start spacing was 60001 to 60036 ms. No 429 and no discovery error.
+2026-11-06T07:49:44.645Z observe-live start central=11/06/2026, 01:49:44 CST minutes=20 cadenceMs=60000
+2026-11-06T07:49:44.948Z cycle=1 fetched=40 unique=24 candidates=0 discovery=ok snaps=332 gapMs=0
+2026-11-06T07:50:44.890Z cycle=2 fetched=40 unique=47 candidates=0 discovery=ok snaps=367 gapMs=NaN
+2026-11-06T07:51:44.893Z cycle=3 fetched=40 unique=68 candidates=0 discovery=ok snaps=383 gapMs=NaN
+2026-11-06T07:52:44.911Z cycle=4 fetched=40 unique=68 candidates=0 discovery=ok snaps=392 gapMs=NaN
+2026-11-06T07:53:44.927Z cycle=5 fetched=40 unique=68 candidates=0 discovery=ok snaps=394 gapMs=NaN
+2026-11-06T07:54:44.989Z cycle=6 fetched=40 unique=98 candidates=0 discovery=ok snaps=394 gapMs=NaN
+2026-11-06T07:55:44.951Z cycle=7 fetched=40 unique=138 candidates=0 discovery=ok snaps=394 gapMs=NaN
+2026-11-06T07:56:45.013Z cycle=8 fetched=40 unique=160 candidates=0 discovery=ok snaps=395 gapMs=NaN
+2026-11-06T07:57:45.061Z cycle=9 fetched=40 unique=184 candidates=0 discovery=ok snaps=395 gapMs=NaN
+2026-11-06T07:58:45.101Z cycle=10 fetched=40 unique=199 candidates=0 discovery=ok snaps=394 gapMs=NaN
+2026-11-06T07:59:45.103Z cycle=11 fetched=40 unique=212 candidates=0 discovery=ok snaps=394 gapMs=NaN
+2026-11-06T08:00:45.168Z cycle=12 fetched=40 unique=224 candidates=0 discovery=ok snaps=394 gapMs=NaN
+2026-11-06T08:01:45.190Z cycle=13 fetched=40 unique=224 candidates=0 discovery=ok snaps=393 gapMs=NaN
+2026-11-06T08:02:45.179Z cycle=14 fetched=40 unique=255 candidates=0 discovery=ok snaps=18 gapMs=NaN
+2026-11-06T08:03:45.182Z cycle=15 fetched=40 unique=278 candidates=0 discovery=ok snaps=18 gapMs=NaN
+2026-11-06T08:04:45.198Z cycle=16 fetched=40 unique=302 candidates=0 discovery=ok snaps=18 gapMs=NaN
+2026-11-06T08:05:45.240Z cycle=17 fetched=40 unique=320 candidates=0 discovery=ok snaps=18 gapMs=NaN
+2026-11-06T08:06:45.196Z cycle=18 fetched=40 unique=339 candidates=0 discovery=ok snaps=18 gapMs=NaN
+2026-11-06T08:07:45.246Z cycle=19 fetched=40 unique=362 candidates=0 discovery=ok snaps=18 gapMs=NaN
+2026-11-06T08:08:45.245Z cycle=20 fetched=40 unique=378 candidates=0 discovery=ok snaps=18 gapMs=NaN
+2026-11-06T08:09:45.127Z observe-live stop central=11/06/2026, 02:09:45 CST cycles=20 unique=378 tenMinutePair=true

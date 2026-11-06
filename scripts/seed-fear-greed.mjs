@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { loadEnvFile, CHROME_UA, runSeed, readSeedSnapshot, sleep, resolveProxyForConnect } from './_seed-utils.mjs';
+import { calendarYearChange, stepChange } from './fred-calendar-windows.mjs';
 import { unwrapEnvelope } from './_seed-envelope-source.mjs';
 import { readPublishedPctAbove200d } from './_sp500-breadth.mjs';
 loadEnvFile(import.meta.url);
@@ -292,17 +293,20 @@ function scoreCategory(name, inputs) {
     }
     case 'liquidity': {
       const { m2Obs, walclObs, sofr } = inputs;
-      // M2SL is weekly since 2021 — 52 observations back = 52 weeks = true YoY. Using 12 was ~13 weeks (quarterly).
-      const m2Latest = fredLatest(m2Obs), m2Ago = fredNMonthsAgo(m2Obs, 52);
-      const m2Yoy = (m2Latest && m2Ago && m2Ago !== 0) ? ((m2Latest - m2Ago) / m2Ago) * 100 : null;
-      // WALCL is weekly — 4 observations back = ~1 month (MoM). Using 1 was week-over-week (too noisy).
-      const walclLatest = fredLatest(walclObs), walclAgo = fredNMonthsAgo(walclObs, 4);
-      const fedBsMom = (walclLatest && walclAgo && walclAgo !== 0) ? ((walclLatest - walclAgo) / walclAgo) * 100 : null;
+      // M2SL is monthly. Year-over-year is the same calendar date one year
+      // earlier. Fifty-two rows on this series is about four years, not one.
+      // A missing anniversary stays null. No neighboring month is invented.
+      const m2 = calendarYearChange(m2Obs, { asOfMs: Date.now() });
+      const m2Yoy = m2.ok ? m2.pct : null;
+      // WALCL is weekly. Four observations back is four weekly steps, about
+      // four weeks. It is not a calendar month.
+      const walcl = stepChange(walclObs, 4, { asOfMs: Date.now() });
+      const fedBsMom = walcl.ok ? walcl.pct : null;
       // M2 YoY: normal annual growth is 4-6%; use 5x multiplier so 5% YoY ≈ 75
       const m2Score = m2Yoy != null ? clamp(m2Yoy * 5 + 50, 0, 100) : 50;
       const fedScore = fedBsMom != null ? clamp(fedBsMom * 20 + 50, 0, 100) : 50;
       const sofrScore = sofr != null ? clamp(100 - sofr * 15, 0, 100) : 50;
-      return { score: Math.round(m2Score * 0.4 + fedScore * 0.3 + sofrScore * 0.3), inputs: { m2Yoy, fedBsMom, sofr } };
+      return { score: Math.round(m2Score * 0.4 + fedScore * 0.3 + sofrScore * 0.3), inputs: { m2Yoy, m2LatestDate: m2.latest?.date ?? null, m2PriorDate: m2.prior?.date ?? null, m2Window: 'calendar-year', fedBsMom, walclLatestDate: walcl.latest?.date ?? null, walclPriorDate: walcl.prior?.date ?? null, walclWindow: '4-observation-step', sofr } };
     }
     case 'credit': {
       const { hyObs, igObs } = inputs;

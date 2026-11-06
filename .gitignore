@@ -1,4 +1,7 @@
 node_modules/
+.local-backend/
+tools/desk-scan/local-state/
+tools/desk-scan/state/
 .idea/
 dist/
 public/blog/

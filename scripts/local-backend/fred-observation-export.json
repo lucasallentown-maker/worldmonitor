@@ -1,0 +1,65 @@
+{
+  "valid": true,
+  "series_count": 8,
+  "ok_count": 8,
+  "fail_count": 0,
+  "provenance": "sanitized FRED observation export retrieved on the operator box. No API key or token is in this file.",
+  "observations": [
+    {
+      "series": "M2SL",
+      "date": "2026-09-01",
+      "value": 23413.9,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    },
+    {
+      "series": "WALCL",
+      "date": "2026-11-04",
+      "value": 6748145.0,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    },
+    {
+      "series": "SOFR",
+      "date": "2026-11-04",
+      "value": 3.94,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    },
+    {
+      "series": "BAMLH0A0HYM2",
+      "date": "2026-11-04",
+      "value": 3.32,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    },
+    {
+      "series": "BAMLC0A0CM",
+      "date": "2026-11-04",
+      "value": 0.91,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    },
+    {
+      "series": "FEDFUNDS",
+      "date": "2026-10-01",
+      "value": 3.88,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    },
+    {
+      "series": "T10Y2Y",
+      "date": "2026-11-05",
+      "value": 0.38,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    },
+    {
+      "series": "UNRATE",
+      "date": "2026-09-01",
+      "value": 4.2,
+      "httpstatus": 200,
+      "retrievaltime": "2026-11-06T00:49:02.110928-06:00"
+    }
+  ]
+}

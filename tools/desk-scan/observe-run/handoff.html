@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Paper handoff — not an order</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; max-width: 46rem; line-height: 1.45; }
+    .warn { background: #fff4d6; padding: 0.75rem 1rem; }
+    .badge { border: 1px solid #444; padding: 0.1rem 0.4rem; }
+    code { word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>Paper handoff</h1>
+  <p>No candidates passed the existing filters.</p>
+  <p>Observation 2026-11-06 01:49:44 CST to 2026-11-06 02:09:45 CST. Cycles 20. Unique pools 378. Surviving candidates 0.</p>
+  <p class="warn">Unverified holder drop. The parser marked every snapshot complete. The count went from 393 at 08:01:45Z to 18 at 08:02:45Z and stayed at 18. Program-level account counts were not stored, so this log cannot say why. Do not treat that holder series as trustworthy.</p>
+  <h2>Why pools were rejected</h2>
+  <ul><li>liquidity-below-15k: 204</li><li>age-outside-10m-48h: 161</li><li>volume-h24-below-50k: 10</li><li>mcap-missing-fdv-not-accepted: 3</li><li>passedCheapFilter: 0</li></ul>
+  <h2>Paper suggestion</h2>
+  <p>Bank 200 dollars. Free cash 200. Locked 0. Fixed fraction 0.01 gives 2 dollars before the fee gate. Suggested entry 0 dollars. Fee status blocked-no-verified-quotes. Slippage 100 basis points per side. Combined fee cap 0.04 of the entry notional, round-trip. Size was not raised to fit a fee.</p>
+  <h2>Research links</h2>
+  <article>
+    <p><strong>Mootun</strong> <span class="badge">Not approved</span></p>
+    <p>Chain solana</p>
+    <p>Contract <code id="contract">EiEHSWpXXpYucKW9zjfyj2ixSXkvUKbHLeUkjeXDyWyF</code></p>
+    <p>Observed during the read-only scan. It did not pass the existing filters.</p>
+    <p><a href="https://fomo.family/tokens/solana/EiEHSWpXXpYucKW9zjfyj2ixSXkvUKbHLeUkjeXDyWyF" target="_blank" rel="noopener noreferrer">Open in FOMO</a></p>
+    <p>This opens a public page. It does not connect a wallet or submit an order.</p>
+  </article>
+  <h2>Passed the filters</h2>
+  <p>None. A blocked mint is not labeled approved.</p>
+</body>
+</html>

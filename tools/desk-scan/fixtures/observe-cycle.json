@@ -1,0 +1,17 @@
+{
+  "fixture": true,
+  "label": "FIXTURE — not live market data",
+  "now": 1762430400000,
+  "rows": [
+    {
+      "contract": "Mint111111111111111111111111111111111111111",
+      "ticker": "FIXTURE",
+      "liquidityUsd": 80000,
+      "liquiditySource": "verified-candidate",
+      "price": 1.2,
+      "holders": 120,
+      "holderComplete": true,
+      "prospective": true
+    }
+  ]
+}

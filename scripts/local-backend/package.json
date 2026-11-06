@@ -1,0 +1,9 @@
+{
+  "name": "worldmonitor-local-backend",
+  "private": true,
+  "type": "module",
+  "description": "Local dependency for docker/redis-rest-proxy.mjs. Not the dashboard runtime.",
+  "dependencies": {
+    "redis": "4.7.1"
+  }
+}

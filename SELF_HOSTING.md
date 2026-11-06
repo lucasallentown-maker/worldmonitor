@@ -104,6 +104,8 @@ Packagers who run the services directly (for example the FreeBSD `www/worldmonit
 
 Inside Docker the defaults are correct: compose publishes the proxy only on `127.0.0.1:8079`, and Railway needs the relay on every interface.
 
+For a host that has Node.js 20+ and `redis-server` but not Docker, `scripts/local-backend/RUNBOOK.md` is the tested localhost path: Redis and `docker/redis-rest-proxy.mjs` bound to `127.0.0.1`, then the seeders that fill the fear-and-greed, crypto, and cross-source keys. It does not publish Redis and it does not call `api.worldmonitor.app`.
+
 `@bufbuild/buf` ships no binary for some platforms, including FreeBSD, and its install script fails there with `Unsupported platform`. The runtime does not need buf: it is only used by the proto development targets (`make generate`, `make lint`, `make deps`, `make breaking`, `make check`), and the generated code is committed. Install with `npm ci --ignore-scripts` and then run `npm run postinstall`; anyone running those targets on such a platform needs a buf CLI built for it. `--ignore-scripts` also skips the `esbuild` and `sharp` install scripts; check that your platform's packages provide working binaries for both.
 
 ## 🤖 Using the MCP server
