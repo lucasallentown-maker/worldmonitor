@@ -140,6 +140,15 @@ The 2 dollar figure is then capped by free cash, 2 percent of verified-candidate
 
 `retest` does not block the first entry. Adds stay off until you define a measurable retest.
 
+Open the manual handoff page locally. It is not a hosted site and it does not log into FOMO.
+
+```bash
+node --test tests/fomo-handoff.test.mjs tests/desk-watch.test.mjs
+node tools/desk-scan/handoff.mjs --summary tools/desk-scan/observe-run/summary.json --config tools/desk-scan/paper.bank.json --out tools/desk-scan/observe-run/handoff.html
+```
+
+Open `tools/desk-scan/observe-run/handoff.html` in a browser. The only token link is labeled not approved. It points at `https://fomo.family/tokens/solana/` plus the observed mint. That is a public page, not an order. Hosting the World Monitor app is separate and is not required to open this file.
+
 Still required before a non-zero paper entry:
 
 - a displayed fomo.family buy quote and sell quote for the 2 dollar notional, with fee dollars, side, time, and provenance, whose combined fee is at most 0.08 dollars
