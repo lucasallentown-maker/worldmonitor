@@ -4,6 +4,7 @@ import { BENCH_MS } from '../tools/desk-scan/src/rules.mjs';
 import { ceilingScenario, FEE_QUOTE_MAX_AGE_MS, feeGate, scenarioFee, userGuard } from '../tools/desk-scan/src/fomo-fees.mjs';
 import { paperQuote } from '../tools/desk-scan/src/costs.mjs';
 import { sizePaper } from '../tools/desk-scan/src/size.mjs';
+import { buildOrderPreview } from '../tools/desk-scan/src/order-preview.mjs';
 
 const NOW = Date.parse('2026-11-06T12:00:00.000Z');
 const FIXTURE = 'FIXTURE — not a live quote';
@@ -30,8 +31,11 @@ test('the 12 dollar ceiling scenario is 0.24 against the 0.95 user guard', () =>
   assert.equal(preview.liveQuote, false);
   assert.equal(preview.solanaLowFeeUsd, 12 * 0.02);
   assert.equal(preview.userGuardUsd, 0.95);
-  assert.equal(preview.conflict, 'scenario-cheap-route-below-user-guard');
+  assert.equal(preview.conflict, null);
+  assert.equal(preview.legacyFloor.status, 'superseded');
+  assert.equal(preview.legacyFloor.active, false);
   assert.equal(userGuard(12).formula, 'max(0.0045 * dollars, 0.95)');
+  assert.equal(userGuard(12).active, false);
   assert.equal(FEE_QUOTE_MAX_AGE_MS, BENCH_MS);
   assert.equal(BENCH_MS, 25 * 60 * 1000);
 });
@@ -88,8 +92,11 @@ test('a quote gates suggestion and does not become a live fill', () => {
     entry: quote('buy', 0.24),
     exit: quote('sell', 0.24),
   });
-  assert.equal(guard.reason, 'user-guard-above-max-fee');
-  assert.equal(guard.conflict, 'quoted-fee-below-user-guard');
+  assert.equal(guard.pass, true);
+  assert.equal(guard.legacyFloorActive, false);
+  assert.equal(guard.legacyFloor.status, 'superseded');
+  assert.equal(guard.suggest, false);
+  assert.equal(guard.filled, false);
   const stale = feeGate({
     notionalUsd: 12,
     chain: 'solana',
@@ -136,7 +143,7 @@ test('round-trip 4 percent of entry notional passes at equality and rejects abov
     exit: quote('sell', 2, { notionalUsd: 80 }),
   });
   assert.equal(atLimit.pass, true);
-  assert.equal(atLimit.feeRule, undefined);
+  assert.equal(atLimit.feeRule, 'pass');
   assert.equal(atLimit.roundTripRate, 0.04);
   assert.equal(atLimit.maxFeeBasis, 'entry-notional');
   assert.equal(atLimit.guardConflict, false);
@@ -165,11 +172,26 @@ test('round-trip 4 percent of entry notional passes at equality and rejects abov
     exit: quote('sell', 0.24),
   });
   assert.equal(ceiling.feeRule, 'pass');
-  assert.equal(ceiling.reason, 'guard-conflict-needs-decision');
-  assert.equal(ceiling.suggest, false);
+  assert.equal(ceiling.reason, null);
+  assert.equal(ceiling.pass, true);
+  assert.equal(ceiling.legacyFloor.active, false);
+  assert.equal(ceiling.legacyFloor.usd, 0.95);
   assert.equal(ceiling.roundTripBudgetUsd, 0.48);
-  assert.equal(ceiling.guard.usd, 0.95);
   assert.equal(ceiling.maxFeeBasis, 'entry-notional');
+  assert.equal(ceiling.filled, false);
+  const below = feeGate({
+    notionalUsd: 12,
+    chain: 'solana',
+    now: NOW,
+    maxFeeRate: 0.04,
+    maxFeeScope: 'round-trip',
+    allowFixture: true,
+    entry: quote('buy', 0.1),
+    exit: quote('sell', 0.1),
+  });
+  assert.equal(below.pass, true);
+  assert.equal(below.legacyFloorActive, false);
+  assert.equal(below.filled, false);
   const missing = feeGate({
     notionalUsd: 12,
     chain: 'solana',
@@ -181,7 +203,25 @@ test('round-trip 4 percent of entry notional passes at equality and rejects abov
   assert.equal(missing.reason, 'exit-fee-unknown');
 });
 
-test('paper sizing keeps the bank and does not invent cash when the fee gate rejects', () => {
+test('a cheap verified fixture is not blocked by the superseded fee floor', () => {
+  const unset = sizePaper({
+    freeCash: 200,
+    lockedCapital: 0,
+    bank: 200,
+    realizedProfit: 0,
+    liquidityUsd: 100000,
+    kelly: null,
+    chain: 'solana',
+    now: NOW,
+    requireFeeGate: true,
+    allowFixture: true,
+    entryQuote: quote('buy', 0.1),
+    exitQuote: quote('sell', 0.1),
+    config: { retest: true, slippageBps: 100, maxFeeRate: 0.04, maxFeeScope: 'round-trip' },
+  });
+  assert.equal(unset.notional, 0);
+  assert.equal(unset.reason, 'kelly-undocumented');
+  assert.equal(unset.liveOrder, false);
   const sized = sizePaper({
     freeCash: 12,
     lockedCapital: 0,
@@ -193,13 +233,23 @@ test('paper sizing keeps the bank and does not invent cash when the fee gate rej
     now: NOW,
     requireFeeGate: true,
     allowFixture: true,
-    entryQuote: quote('buy', 0.24),
-    exitQuote: quote('sell', 0.24),
-    config: { retest: true, slippageBps: 50, maxFeeRate: 0.03, maxFeeScope: 'per-leg' },
+    entryQuote: quote('buy', 0.1),
+    exitQuote: quote('sell', 0.1),
+    config: { retest: true, slippageBps: 100, maxFeeRate: 0.04, maxFeeScope: 'round-trip' },
   });
-  assert.equal(sized.notional, 0);
-  assert.equal(sized.reason, 'user-guard-above-max-fee');
+  assert.equal(sized.reason, null);
+  assert.equal(sized.notional, 12);
   assert.equal(sized.liveOrder, false);
-  assert.equal(sized.lockedCapital, 0);
   assert.equal(sized.bankCeiling, 12);
+  const preview = buildOrderPreview({
+    config: { bankUsd: 200, freeCashUsd: 200, lockedCapitalUsd: 0, slippageBps: 100, maxFeeRate: 0.04, maxFeeScope: 'round-trip', kelly: null, retest: null },
+    now: NOW,
+  });
+  assert.equal(preview.submitted, false);
+  assert.equal(preview.transport, null);
+  assert.equal(preview.supportsVenueApi, false);
+  assert.equal(preview.notional, 0);
+  assert.ok(preview.blockers.includes('kelly-unset'));
+  assert.ok(preview.blockers.includes('fee-quote-missing'));
+  assert.equal(preview.legacyFloorActive, false);
 });

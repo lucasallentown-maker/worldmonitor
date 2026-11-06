@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { runPaperScan } from './src/live.mjs';
 import { runPaperFixture } from './src/paper-cycle.mjs';
 import { planExecutablePaper } from './src/executable.mjs';
+import { buildOrderPreview } from './src/order-preview.mjs';
 import { configGuide } from './src/config.mjs';
 import { loadObservation, observeCandidates, persistObservation, rowsFromScan } from './src/observe.mjs';
 import { loadTimerState, timerHealth } from './src/timer-state.mjs';
@@ -82,6 +83,14 @@ if (process.argv.includes('--timer-health')) {
   const health = timerHealth(loaded.ok === false ? null : loaded, Date.now());
   console.log(JSON.stringify({ ok: health.ok, reason: health.reason, liveOrder: false, timers: health.timers }));
   process.exit(health.ok ? 0 : 1);
+}
+
+if (process.argv.includes('--order-preview')) {
+  const previewConfigPath = arg('--paper-config') || path.join(HERE, 'paper.bank.json');
+  const preview = buildOrderPreview({ config: readJson(previewConfigPath), now: Date.now() });
+  atomicWriteJson(path.join(outDir, 'order-preview.json'), preview);
+  console.log(`ORDER PREVIEW NOT SUBMITTED blockers=${preview.blockers.join(',') || 'none'} venueApi=${preview.venueApi}`);
+  process.exit(preview.submitted ? 1 : 0);
 }
 
 const paperConfigPath = arg('--paper-config');

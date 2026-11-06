@@ -20,7 +20,7 @@
   "maxFeeScope": "round-trip",
   "maxFeeBasis": "entry-notional",
   "venue": "fomo.family",
-  "feeNote": "Buy fee plus sell fee must be at most 4 percent of the entry notional. This 0.04 is not a per-leg cap. Both quote legs are required. No venue flat fee or referral is assumed.",
+  "feeNote": "Buy fee plus sell fee must be at most 4 percent of the entry notional. This 0.04 is not a per-leg cap. Both quote legs are required. No venue flat fee or referral is assumed. The old max(0.0045 * dollars, 0.95) floor is superseded and does not gate this policy.",
   "retest": null,
   "liquidityUsd": null,
   "kelly": {

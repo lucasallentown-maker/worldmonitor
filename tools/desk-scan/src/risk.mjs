@@ -20,11 +20,15 @@ export function volumeRatio(h6, h24) {
 }
 
 export function feeFloor(dollars, maxFeeRate) {
-  if (!Number.isFinite(maxFeeRate) || maxFeeRate <= 0) return { ok: false, reason: 'fee-max-unconfigured' };
-  if (!finitePositive(dollars)) return { ok: false, reason: 'fee-dollars-invalid' };
+  // Superseded for paper sizing. The selected policy uses quoted round-trip
+  // fees. This function only records what the old floor would have said.
+  if (!Number.isFinite(maxFeeRate) || maxFeeRate <= 0) {
+    return { ok: false, status: 'superseded', active: false, reason: 'fee-max-unconfigured' };
+  }
+  if (!finitePositive(dollars)) return { ok: false, status: 'superseded', active: false, reason: 'fee-dollars-invalid' };
   const floor = Math.max(0.0045 * dollars, 0.95) / dollars;
-  if (floor > maxFeeRate) return { ok: false, reason: 'fee-floor-above-configured-max', floor };
-  return { ok: true, floor };
+  if (floor > maxFeeRate) return { ok: false, status: 'superseded', active: false, reason: 'fee-floor-above-configured-max', floor };
+  return { ok: true, status: 'superseded', active: false, floor };
 }
 
 export function riskCheck(input) {

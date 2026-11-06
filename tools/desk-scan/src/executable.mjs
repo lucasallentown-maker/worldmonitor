@@ -17,10 +17,6 @@ export function planExecutablePaper(config, quote = {}, context = {}) {
   const roundTripBudgetUsd = Number.isFinite(checked.bankCeilingUsd) && Number.isFinite(config?.maxFeeRate)
     ? checked.bankCeilingUsd * config.maxFeeRate
     : null;
-  const guardConflict = config?.maxFeeScope === 'round-trip'
-    && Number.isFinite(roundTripBudgetUsd)
-    && Number.isFinite(scenario.userGuardUsd)
-    && scenario.userGuardUsd > roundTripBudgetUsd + 1e-9;
   const readiness = {
     bankUsd: checked.bankUsd,
     freeCashUsd: Number.isFinite(config?.freeCashUsd) ? config.freeCashUsd : null,
@@ -35,7 +31,8 @@ export function planExecutablePaper(config, quote = {}, context = {}) {
     retest: config?.retest === true ? 'set' : 'unset',
     kelly: checked.kellyUnset ? 'unset' : 'set',
     quotes: 'blocked-until-supplied',
-    guardConflict: guardConflict ? 'user-guard-exceeds-round-trip-budget' : null,
+    legacyFloor: 'superseded',
+    legacyFloorActive: false,
     guardUsdAtCeiling: scenario.userGuardUsd,
     roundTripBudgetUsdAtCeiling: roundTripBudgetUsd,
     size: checked.kellyUnset ? 0 : null,

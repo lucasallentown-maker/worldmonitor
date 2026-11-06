@@ -132,7 +132,7 @@ After the code above, the same history import reached SUFFICIENT 3/3 again. Fear
 
 `tools/desk-scan/paper.bank.json` now has the selected paper settings. `freeCashUsd` is 200 and `lockedCapitalUsd` is 0. `maxFeeRate` is 0.04, `maxFeeScope` is `round-trip`, and the basis is the entry notional. Buy fee plus sell fee may equal 4 percent and may not exceed it. That 0.04 is not a per-leg cap. `slippageBps` is 100 on each side, which is 1 percent simulated adverse price, separate from the fee cap, and not a promised execution. A fresh journal profit is 0 and is not a real-money claim.
 
-At the 12 dollar ceiling the round-trip budget is 0.48 dollars. The older guard `max(0.0045 * dollars, 0.95)` is 0.95 dollars. That conflict is flagged. A suggestion stays blocked until you decide which rule wins. The guard is not removed. Unknown quotes stay blocked. No flat venue fee or referral is assumed. The bench wait is still 25 minutes.
+The older floor `max(0.0045 * dollars, 0.95)` is superseded for this paper policy. It remains in the result as an audit note and it does not block a verified quote. A buy fee plus a sell fee at or under 4 percent of the entry notional passes. Unknown quotes stay blocked. No flat venue fee or referral is assumed. The bench wait is still 25 minutes. An order preview is manual and is not submitted. No venue order API is verified.
 
 Still unset, so size stays 0:
 

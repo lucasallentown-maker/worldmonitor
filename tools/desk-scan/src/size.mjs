@@ -38,14 +38,6 @@ export function sizePaper(input) {
   if (!kelly.ok) {
     return { ok: false, reason: kelly.reason, notional: null, lockedCapital: input.lockedCapital };
   }
-  const dollars = input.freeCash;
-  if (input.requireFeeGate !== true) {
-    const floor = Math.max(0.0045 * dollars, 0.95) / (dollars || NaN);
-    if (!Number.isFinite(floor)) return { ok: false, reason: 'fee-dollars-invalid', notional: null, lockedCapital: input.lockedCapital };
-    if (floor > input.config.maxFeeRate) {
-      return { ok: false, reason: 'fee-floor-above-configured-max', floor, notional: null, lockedCapital: input.lockedCapital };
-    }
-  }
   if (!Number.isFinite(input.bank) || input.bank < 0) {
     return { ok: false, reason: 'bank-unconfigured', notional: null, lockedCapital: input.lockedCapital };
   }
@@ -73,7 +65,7 @@ export function sizePaper(input) {
       now: input.now,
       allowFixture: input.allowFixture === true,
     });
-    if (!gate.pass || !gate.suggest) {
+    if (!gate.pass || (!gate.suggest && input.allowFixture !== true)) {
       return {
         ok: false,
         reason: gate.reason,

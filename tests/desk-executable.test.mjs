@@ -80,7 +80,9 @@ test('the entered 200 is a paper bank ceiling of 12, not spendable cash or a ven
   assert.equal(plan.feeScenario.liveQuote, false);
   assert.equal(plan.feeScenario.solanaLowFeeUsd, plan.feeScenario.notionalUsd * 0.02);
   assert.equal(plan.feeScenario.userGuardUsd, 0.95);
-  assert.equal(plan.feeScenario.conflict, 'scenario-cheap-route-below-user-guard');
+  assert.equal(plan.feeScenario.conflict, null);
+  assert.equal(plan.feeScenario.legacyFloor.active, false);
+  assert.equal(plan.feeScenario.legacyFloor.status, 'superseded');
   assert.equal(plan.readiness.freeCashUsd, 200);
   assert.equal(plan.readiness.lockedCapitalUsd, 0);
   assert.equal(plan.readiness.maxFeeRate, 0.04);
@@ -91,7 +93,8 @@ test('the entered 200 is a paper bank ceiling of 12, not spendable cash or a ven
   assert.equal(plan.readiness.retest, 'unset');
   assert.equal(plan.readiness.kelly, 'unset');
   assert.equal(plan.readiness.size, 0);
-  assert.equal(plan.readiness.guardConflict, 'user-guard-exceeds-round-trip-budget');
+  assert.equal(plan.readiness.legacyFloor, 'superseded');
+  assert.equal(plan.readiness.legacyFloorActive, false);
   assert.equal(plan.readiness.roundTripBudgetUsdAtCeiling, 0.48);
   assert.deepEqual(plan.missing, ['retest']);
   const assumed = validatePaperConfig({ bankUsd: 200, bankUsdSource: 'user-entered', freeCashUsd: 200 });
